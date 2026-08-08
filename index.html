@@ -665,7 +665,7 @@ const player = {
   job:'beginner', job2:null, job3:null, job4:null, level:1, exp:0, sp:0, skills:{},
   hp:100, mp:60, meso:0, channel:null,
   potions:{ hp:3, mp:3, hp2:0, mp2:0 }, potionCd:{ hp:0, mp:0 },
-  binds:{},
+  binds:{}, seq:['X','C','A','D'], book:{}, stats:{ kills:0, boss:0, maxDmg:0, deaths:0, time:0 },
   inv:[], equip:{ weapon:null, hat:null, top:null, glove:null, shoe:null },
   buffs:{},
   combo:{ n:0, t:0 },
@@ -783,6 +783,13 @@ function castBindKey(key){
   else if (t === 3) useSkillSlot3(0);
   else useSkillSlot4(0);
 }
+function castSequence(){
+  const seq = (Array.isArray(player.seq) && player.seq.length ? player.seq : ['X', 'C', 'A', 'D']).filter(k => BIND_KEYS.includes(k));
+  seq.forEach((k, i) => {
+    if (i === 0) castBindKey(k);
+    else after(0.07 * i, () => { if (game.state === 'play' && !game.uiWindow) castBindKey(k); });
+  });
+}
 function setBind(key, id){
   if (!BIND_KEYS.includes(key) || !skillDefById(id)) return;
   const prevOfKey = bindOf(key);
@@ -816,6 +823,7 @@ function saveGame(){
     localStorage.setItem(SAVE_V2, JSON.stringify({
       v:2, job:player.job, job2:player.job2, job3:player.job3, job4:player.job4, level:player.level, exp:player.exp, sp:player.sp,
       skills:player.skills, meso:player.meso, potions:player.potions, binds:player.binds,
+      seq:player.seq, book:player.book, stats:player.stats,
       inv:player.inv, equip:player.equip, quests:player.quests,
       mapIdx:game.mapIdx, cleared:game.cleared,
       bossRespawn:Math.max(0, game.bossRespawn), bossAlerted:game.bossAlerted, bossRespawnMap:game.bossRespawnMap,
@@ -850,8 +858,19 @@ function loadSaveData(){
       player.potions = { hp:0, mp:0, hp2:0, mp2:0 };
       if (d2.potions) for (const k in POTIONS) player.potions[k] = clamp(d2.potions[k] | 0, 0, 99);
       player.binds = {};
+    player.seq = ['X', 'C', 'A', 'D'];
+    player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
       if (d2.binds && typeof d2.binds === 'object'){
         for (const k in d2.binds) if (BIND_KEYS.includes(k) && typeof d2.binds[k] === 'string') player.binds[k] = d2.binds[k];
+      }
+      player.seq = Array.isArray(d2.seq) ? d2.seq.filter(k => BIND_KEYS.includes(k)).slice(0, 11) : ['X', 'C', 'A', 'D'];
+      player.book = {};
+      if (d2.book && typeof d2.book === 'object'){
+        for (const k in d2.book) if (MTYPES[k]) player.book[k] = clamp(d2.book[k] | 0, 0, 1e9);
+      }
+      player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
+      if (d2.stats && typeof d2.stats === 'object'){
+        for (const k of ['kills', 'boss', 'maxDmg', 'deaths', 'time']) player.stats[k] = clamp(+d2.stats[k] || 0, 0, 1e12);
       }
       player.inv = Array.isArray(d2.inv) ? d2.inv.filter(validItem).slice(0, 24) : [];
       player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
@@ -880,6 +899,10 @@ function loadSaveData(){
       player.meso = Math.max(0, d1.meso || 0) + (d1.weaponTier || 0) * 800;
       player.potions = { hp: clamp((d1.potions && d1.potions.hp) || 0, 0, 99), mp: clamp((d1.potions && d1.potions.mp) || 0, 0, 99), hp2:0, mp2:0 };
       player.binds = {};
+      player.seq = ['X', 'C', 'A', 'D'];
+      player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
+    player.seq = ['X', 'C', 'A', 'D'];
+    player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
       player.inv = []; player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
       player.quests = {};
       game.mapIdx = 0;
@@ -911,6 +934,8 @@ function startGame(useSave){
     player.job = 'beginner'; player.job2 = null; player.job3 = null; player.job4 = null; player.level = 1; player.exp = 0; player.sp = 0; player.skills = {};
     player.meso = 0; player.potions = { hp:3, mp:3, hp2:0, mp2:0 };
     player.binds = {};
+    player.seq = ['X', 'C', 'A', 'D'];
+    player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
     player.inv = []; player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
     player.quests = {};
     game.mapIdx = 0; game.cleared = false;
@@ -1930,6 +1955,7 @@ function hitMonster(m, mult){
     m.stun = Math.max(m.stun, m.T.kbResist ? 0.12 : 0.30);
     m.kb = player.facing * (m.T.kbResist ? 55 : (crit ? 230 : 150));
   }
+  if (dmg > (player.stats.maxDmg || 0)) player.stats.maxDmg = dmg;
   addDmgText(m.x, m.y - m.T.h - 8, String(dmg), crit ? '#ff5ab0' : '#ffb642', crit);
   addEffect('hitstar', m.x + rand(-8, 8), m.y - m.T.h / 2 + rand(-8, 8), 1);
   const hy = m.y - m.T.h / 2;
@@ -1968,6 +1994,17 @@ function explodeAt(x, y, mult){
 const M_SHARD = { snail:'#4a74d0', rsnail:'#d05a48', slime:'#5cbf4a', shroom:'#e08a3a', pig:'#f0a0b8', boar:'#8a5040', stump:'#9a7a4e', eye:'#9a5ad0', zshroom:'#8a6ab8', boss:'#d85450', lupin:'#a0703c', ironhog:'#6a7a8a', golem:'#8a8a7a', kslime:'#5cbf4a', clam:'#f0a0b0', octo:'#5a8ad0', fang:'#e8eef6', pepe:'#f0d040', igolem:'#a8c8e0', tick:'#c8a050', yeti:'#e8eef6', timekeeper:'#c8a050' };
 function killMonster(m){
   m.dead = true; m.deadT = 0;
+  // 도감 + 기록
+  player.stats.kills++;
+  if (m.T.isBoss) player.stats.boss++;
+  const seen = player.book[m.type] || 0;
+  player.book[m.type] = seen + 1;
+  if (seen === 0){
+    const bonus = (m.T.dropTier || 1) * 100;
+    player.meso += bonus;
+    notify('도감 등록: ' + m.T.name + '! (+' + bonus + '메소)');
+    SFX.questOk();
+  }
   addEffect('deathburst', m.x, m.y - m.T.h / 2, 1);
   burstShards(m.x, m.y - m.T.h / 2, m.type === 'boss' ? 26 : 9, M_SHARD[m.type] || '#c8c8c8');
   burstGlow(m.x, m.y - m.T.h / 2, 5, '#fff2b0', true);
@@ -2052,6 +2089,7 @@ function hurtPlayer(dmg, fromX){
   feelHit(0.07, player.x < fromX ? -1 : 1);
   if (player.hp <= 0){
     player.hp = 0;
+    player.stats.deaths++;
     game.state = 'dead';
     game.uiWindow = null;
     game.deadTimer = 0;
@@ -2683,6 +2721,7 @@ function updateAll(dt){
   game.uiArm = Math.max(0, game.uiArm - dt);
   updateFloaters(dt);
 
+  if (game.state === 'play') player.stats.time += dt;
   if (game.state === 'play' && game.fadeDir === 0 && !game.uiWindow){
     if (game.jobPromptPending && player.job === 'beginner'){
       game.uiWindow = 'job';
@@ -3598,6 +3637,29 @@ function drawDrops(){
 // ============================================================
 // 몬스터 (메이플 실루엣)
 // ============================================================
+// 몬스터 본체 디스패치 (인게임 + 도감 공용)
+function drawMonsterBody(m, t, flash){
+  if (m.type === 'snail' || m.type === 'rsnail') drawSnail(m, t, flash);
+  else if (m.type === 'slime') drawSlime(m, t, flash);
+  else if (m.type === 'shroom') drawShroom(m, t, flash);
+  else if (m.type === 'pig') drawPig(m, t, flash);
+  else if (m.type === 'boar') drawBoar(m, t, flash, false);
+  else if (m.type === 'ironhog') drawBoar(m, t, flash, true);
+  else if (m.type === 'lupin') drawLupin(m, t, flash);
+  else if (m.type === 'golem' || m.type === 'igolem') drawGolem(m, t, flash, m.type === 'igolem');
+  else if (m.type === 'clam') drawClam(m, t, flash);
+  else if (m.type === 'octo') drawOcto(m, t, flash);
+  else if (m.type === 'fang') drawFang(m, t, flash);
+  else if (m.type === 'pepe') drawPepe(m, t, flash);
+  else if (m.type === 'tick') drawTick(m, t, flash);
+  else if (m.type === 'stump') drawStump(m, t, flash);
+  else if (m.type === 'eye') drawEye(m, t, flash);
+  else if (m.type === 'zshroom') drawZshroom(m, t, flash);
+  else if (m.type === 'boss') drawBoss(m, t, flash);
+  else if (m.type === 'kslime') drawKslime(m, t, flash);
+  else if (m.type === 'yeti') drawYeti(m, t, flash);
+  else if (m.type === 'timekeeper') drawTimekeeper(m, t, flash);
+}
 function drawMonster(m){
   const sx = m.x - camX;
   if (sx < -240 || sx > W + 240) return;
@@ -3630,26 +3692,7 @@ function drawMonster(m){
   ctx.beginPath(); ctx.ellipse(0, 2, m.T.w * 0.48, 6, 0, 0, 7); ctx.fill();
 
   const flash = m.hitFlash > 0;
-  if (m.type === 'snail' || m.type === 'rsnail') drawSnail(m, t, flash);
-  else if (m.type === 'slime') drawSlime(m, t, flash);
-  else if (m.type === 'shroom') drawShroom(m, t, flash);
-  else if (m.type === 'pig') drawPig(m, t, flash);
-  else if (m.type === 'boar') drawBoar(m, t, flash, false);
-  else if (m.type === 'ironhog') drawBoar(m, t, flash, true);
-  else if (m.type === 'lupin') drawLupin(m, t, flash);
-  else if (m.type === 'golem' || m.type === 'igolem') drawGolem(m, t, flash, m.type === 'igolem');
-  else if (m.type === 'clam') drawClam(m, t, flash);
-  else if (m.type === 'octo') drawOcto(m, t, flash);
-  else if (m.type === 'fang') drawFang(m, t, flash);
-  else if (m.type === 'pepe') drawPepe(m, t, flash);
-  else if (m.type === 'tick') drawTick(m, t, flash);
-  else if (m.type === 'stump') drawStump(m, t, flash);
-  else if (m.type === 'eye') drawEye(m, t, flash);
-  else if (m.type === 'zshroom') drawZshroom(m, t, flash);
-  else if (m.type === 'boss') drawBoss(m, t, flash);
-  else if (m.type === 'kslime') drawKslime(m, t, flash);
-  else if (m.type === 'yeti') drawYeti(m, t, flash);
-  else if (m.type === 'timekeeper') drawTimekeeper(m, t, flash);
+  drawMonsterBody(m, t, flash);
   if (flash && !m.dead){
     ctx.globalAlpha = 0.35;
     ctx.globalCompositeOperation = 'lighter';
@@ -6751,6 +6794,19 @@ function drawHUD(){
   for (let i = 1; i < 10; i++){
     ctx.beginPath(); ctx.moveTo(W * i / 10, H - 8); ctx.lineTo(W * i / 10, H); ctx.stroke();
   }
+  // 레벨업 임박: EXP 93%+ 시 펄스 + 안내
+  if (player.exp / expNeed() > 0.93){
+    const lp = 0.25 + Math.abs(Math.sin(game.time * 5)) * 0.45;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(255,232,106,' + lp * 0.4 + ')';
+    ctx.fillRect(0, H - 8, expW, 8);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(60,40,0,0.8)';
+    ctx.strokeText('레벨업 임박!', W - 12, H - 14);
+    ctx.fillStyle = 'rgba(255,232,106,' + (0.6 + lp * 0.4) + ')';
+    ctx.fillText('레벨업 임박!', W - 12, H - 14);
+  }
 }
 
 // ============================================================
@@ -7062,7 +7118,7 @@ function drawTitle(){
   ctx.font = '14px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.9)';
   ctx.fillText('이동 ← →  |  점프 Space (2단)  |  아래점프 ↓+Space  |  로프 ↑/↓', W / 2, 446);
   ctx.fillText('공격 Z (꾹)  |  스킬 X~V·A~F·Q~R·T·G  |  물약 1~4  |  포탈·NPC 대화 ↑', W / 2, 468);
-  ctx.fillText('인벤토리 E  |  스킬창 K (스킬을 끌어 퀵슬롯 배치 변경)  |  스탯 S  |  퀘스트 L  |  소리 M', W / 2, 490);
+  ctx.fillText('인벤 E | 스킬 K(드래그 배치·시퀀스 설정) | 시퀀스 B | 도감 N | 스탯 S | 퀘스트 L | 소리 M', W / 2, 490);
   ctx.fillStyle = '#ffe9a8';
   ctx.fillText('Lv8 전직(전사/궁수/마법사/도적) → Lv15 2차 → Lv20 3차 → Lv28 4차!  머쉬맘을 무찌르세요', W / 2, 518);
   ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '12px sans-serif';
@@ -7403,6 +7459,21 @@ function drawSkillWindow(){
     }
     sy += 76;
   }
+  // 시퀀스(B) 편집: 포함할 키 토글
+  ctx.fillStyle = '#8ab8ff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('시퀀스 [B] :', wx + 24, wy + wh - 96);
+  let tx5 = wx + 104;
+  for (const k of BIND_KEYS){
+    const inSeq = (player.seq || []).includes(k);
+    if (btn(tx5, wy + wh - 112, 34, 24, k, { color: inSeq ? '#8a6a1e' : '#2c3352', hoverColor: inSeq ? '#b08a2e' : '#3a4a7a', font:11 })){
+      if (inSeq) player.seq = player.seq.filter(x2 => x2 !== k);
+      else player.seq = [...(player.seq || []), k];
+      saveGame();
+    }
+    tx5 += 38;
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px sans-serif';
+  ctx.fillText('B 키 한 번으로 선택한 키의 스킬을 순차 발동 (쿨·MP 없는 스킬은 건너뜀)', wx + 104, wy + wh - 80);
   ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('스킬을 마우스로 끌어 하단 퀵슬롯 키에 놓으면 배치가 바뀝니다 (서로 스왑)', wx + ww / 2, wy + wh - 58);
   if (btn(wx + ww - 130, wy + wh - 44, 110, 30, '배치 초기화', { color:'#5a3a3a', hoverColor:'#7a4a4a', font:12 })){
@@ -7412,8 +7483,8 @@ function drawSkillWindow(){
   }
 }
 function drawStatWindow(){
-  const wx = W / 2 - 200, wy = 100, ww = 400, wh = 390;
-  windowFrame(wx, wy, ww, wh, '캐릭터 정보');
+  const wx = W / 2 - 200, wy = 46, ww = 400, wh = 556;
+  windowFrame(wx, wy, ww, wh, '캐릭터 정보 · 기록실');
   const rows = [
     ['이름', '단풍 용사'],
     ['직업', jobDisplayName()],
@@ -7425,6 +7496,11 @@ function drawStatWindow(){
     ['치명타', Math.round(critChance() * 100) + '%'],
     ['남은 SP', String(player.sp)],
     ['메소', player.meso.toLocaleString()],
+    ['총 처치', (player.stats.kills || 0).toLocaleString() + '마리'],
+    ['보스 처치', (player.stats.boss || 0) + '회'],
+    ['최대 데미지', (player.stats.maxDmg || 0).toLocaleString()],
+    ['사망', (player.stats.deaths || 0) + '회'],
+    ['플레이 시간', Math.floor((player.stats.time || 0) / 60) + '분'],
   ];
   let ry = wy + 76;
   ctx.font = '14px sans-serif';
@@ -7741,6 +7817,46 @@ function drawJobUpWindow(tier){
   }
   if (btn(wx + ww / 2 + 46, wy + wh - 66, 104, 46, '나중에')){ game.uiWindow = null; }
 }
+function drawBookWindow(){
+  const wx = W / 2 - 390, wy = 50, ww = 780, wh = 540;
+  windowFrame(wx, wy, ww, wh, '몬스터 도감');
+  const types = Object.keys(MTYPES);
+  const found = types.filter(t2 => (player.book[t2] || 0) > 0).length;
+  ctx.fillStyle = '#ffe28a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('발견 ' + found + ' / ' + types.length + '  ·  처음 잡는 몬스터는 도감 등록 보너스!', wx + ww / 2, wy + 62);
+  const cell = 118, ch2 = 112;
+  types.forEach((t2, i) => {
+    const cx4 = wx + 24 + (i % 6) * (cell + 6);
+    const cy4 = wy + 76 + Math.floor(i / 6) * (ch2 + 6);
+    const cnt = player.book[t2] || 0;
+    const T2 = MTYPES[t2];
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    rr(cx4, cy4, cell, ch2, 10); ctx.fill();
+    ctx.strokeStyle = cnt > 0 ? (T2.isBoss ? '#ffd94a' : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = cnt > 0 && T2.isBoss ? 2 : 1;
+    rr(cx4, cy4, cell, ch2, 10); ctx.stroke();
+    // 미니 초상 (실물 드로잉 재사용)
+    ctx.save();
+    ctx.beginPath(); ctx.rect(cx4 + 2, cy4 + 2, cell - 4, ch2 - 4); ctx.clip();
+    ctx.translate(cx4 + cell / 2, cy4 + 74);
+    const sc = Math.min(0.62, 52 / T2.h);
+    ctx.scale(sc, sc);
+    const fake = { type:t2, T:T2, dir:1, animT:game.time + i, hp:T2.hp, maxHp:T2.hp, dead:false, spawnT:0, squash:0, hitFlash:0, chase:false, landed:true, stun:0, kb:0 };
+    drawMonsterBody(fake, game.time + i, false);
+    ctx.restore();
+    if (cnt > 0){
+      ctx.fillStyle = T2.isBoss ? '#ffd94a' : '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(T2.name, cx4 + cell / 2, cy4 + 90);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px sans-serif';
+      ctx.fillText(cnt.toLocaleString() + '마리 처치', cx4 + cell / 2, cy4 + 104);
+    } else {
+      ctx.fillStyle = 'rgba(14,12,26,0.88)';
+      rr(cx4 + 2, cy4 + 2, cell - 4, ch2 - 4, 9); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('?', cx4 + cell / 2, cy4 + 62);
+    }
+  });
+}
 function drawJob2ChoiceWindow(){
   const wx = W / 2 - 390, wy = 70, ww = 780, wh = 470;
   const opts = JOB2[player.job];
@@ -7792,6 +7908,7 @@ function drawWindows(){
     case 'dialog': drawDialogWindow(); break;
     case 'job': drawJobWindow(); break;
     case 'job2': drawJobUpWindow(2); break;
+    case 'book': drawBookWindow(); break;
     case 'job3': drawJobUpWindow(3); break;
     case 'job4': drawJobUpWindow(4); break;
   }
@@ -7814,7 +7931,7 @@ function drawWindows(){
 
 // ---------- 키보드 ----------
 const HANDLED = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyZ','KeyX','KeyC','KeyV',
-  'KeyA','KeyD','KeyF','KeyQ','KeyW','KeyR','KeyT','KeyG','KeyE','KeyK','KeyS','KeyL','KeyM','KeyP',
+  'KeyA','KeyD','KeyF','KeyQ','KeyW','KeyR','KeyT','KeyG','KeyB','KeyN','KeyE','KeyK','KeyS','KeyL','KeyM','KeyP',
   'Digit1','Digit2','Digit3','Digit4','Enter','Escape'];
 addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return; // 브라우저 단축키 보호
@@ -7827,7 +7944,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
-const WINDOW_KEYS = { KeyE:'inv', KeyK:'skill', KeyS:'stat', KeyL:'quest' };
+const WINDOW_KEYS = { KeyE:'inv', KeyK:'skill', KeyS:'stat', KeyL:'quest', KeyN:'book' };
 function onKeyPress(code){
   if (code === 'KeyM'){ toggleMute(); return; }
 
@@ -7891,6 +8008,7 @@ function onKeyPress(code){
   if (code === 'Space'){ jumpPressed(); return; }
   const bindKeyMap = { KeyX:'X', KeyC:'C', KeyV:'V', KeyA:'A', KeyD:'D', KeyF:'F', KeyQ:'Q', KeyW:'W', KeyR:'R', KeyT:'T', KeyG:'G' };
   if (bindKeyMap[code]){ castBindKey(bindKeyMap[code]); return; }
+  if (code === 'KeyB'){ castSequence(); return; }
   if (code === 'Digit1'){ usePotion('hp'); return; }
   if (code === 'Digit2'){ usePotion('mp'); return; }
   if (code === 'Digit3'){ usePotion('hp2'); return; }
@@ -7936,7 +8054,7 @@ try {
     loadMap(Math.max(0, Math.min(MAPS.length - 1, mi)), 'left');
     if (sp.has('x')) player.x = parseFloat(sp.get('x')) || player.x;
     camX = Math.max(0, Math.min(curMap().w - W, player.x - W / 2));
-    if (sp.get('win') && ['inv','skill','stat','quest','shop','dialog','job','job2','job3','job4'].includes(sp.get('win'))) game.uiWindow = sp.get('win');
+    if (sp.get('win') && ['inv','skill','stat','quest','shop','dialog','job','job2','job3','job4','book'].includes(sp.get('win'))) game.uiWindow = sp.get('win');
     shotPose = sp.get('pose');
     muted = true;
   }
