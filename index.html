@@ -92,12 +92,12 @@ const SKILL2_DEFS = {
     { id:'hk',   key:'F', name:'호크 아이',    mp:25, cd:32,   base:0.10, per:0.01, dur:30, desc:'30초간 공격 속도 증가' },
   ],
   cleric: [
-    { id:'ha',   key:'A', name:'홀리 애로우',  mp:14, cd:0.8,  base:1.6,  per:0.14, desc:'적을 관통하는 성스러운 화살' },
+    { id:'ha',   key:'A', name:'홀리 애로우',  mp:14, cd:0.8,  base:1.35, per:0.12, desc:'적을 관통하는 성스러운 화살' },
     { id:'heal', key:'D', name:'힐',           mp:26, cd:4.0,  base:0.20, per:0.02, desc:'HP를 회복하고 주변 언데드에 신성 피해' },
     { id:'bl',   key:'F', name:'블레스',       mp:25, cd:32,   base:0.10, per:0.01, dur:30, desc:'30초간 공격력·방어·치명타 상승' },
   ],
   assassin: [
-    { id:'ts',    key:'A', name:'트리플 스로우', mp:15, cd:0.7,  base:0.8,  per:0.07, desc:'표창 3발을 연달아 던진다' },
+    { id:'ts',    key:'A', name:'트리플 스로우', mp:15, cd:0.7,  base:0.95, per:0.08, desc:'표창 3발을 연달아 던진다' },
     { id:'sdash', key:'D', name:'섀도 대시',     mp:18, cd:2.2,  base:1.5,  per:0.13, desc:'그림자가 되어 돌진하며 경로의 적을 벤다' },
     { id:'cloak', key:'F', name:'나이트 클로크', mp:25, cd:32,   base:0.18, per:0.015, dur:30, desc:'30초간 받는 피해 감소' },
   ],
@@ -132,6 +132,22 @@ const SKILL3X_DEFS = {
   wizard:    { id:'mtr', key:'Y', name:'메테오',     mp:44, cd:6.5, base:2.6, per:0.24, desc:'하늘에서 화염 운석 3발이 떨어진다' },
   assassin:  { id:'sdc', key:'Y', name:'암살무도',   mp:38, cd:5.5, base:1.6, per:0.14, desc:'그림자 3연쇄 돌진으로 적진을 가른다' },
   bandit:    { id:'jkp', key:'Y', name:'대박 한탕',  mp:30, cd:7.0, base:4.5, per:0.40, desc:'메소 500을 태워 초대형 황금 폭발 (낭만)' },
+};
+// 분기 전용 4차 오의 (I 슬롯, 4차 해금 — 2차 분기 키로 조회)
+const SKILL4X_DEFS = {
+  crusader:  { id:'sbl',  key:'I', name:'세인트 블레이드',  mp:40, cd:4.5, base:1.5,  per:0.13,  desc:'거대한 성검을 소환해 전방 최대 8마리를 3연격으로 심판한다' },
+  berserker: { id:'rmp',  key:'I', name:'피의 광란참',      mp:38, cd:5.0, base:2.0,  per:0.17,  desc:'광기의 대선회 2연격 — 맞춘 대상마다 HP를 흡수한다' },
+  ranger:    { id:'fwr',  key:'I', name:'숲의 분노',        mp:40, cd:5.0, base:1.6,  per:0.14,  desc:'하늘을 뒤덮는 자연의 화살 12발이 전방에 쏟아진다' },
+  sniper:    { id:'rail', key:'I', name:'트윈 레일',        mp:42, cd:5.0, base:3.6,  per:0.32,  desc:'화면 끝까지 모든 것을 꿰뚫는 초고속 레일 2연발' },
+  cleric:    { id:'dvj',  key:'I', name:'디바인 저지먼트',  mp:44, cd:5.0, base:3.2,  per:0.28,  desc:'주변 최대 8마리에 빛의 심판을 내리고 자신을 회복한다 (언데드 1.5배)' },
+  wizard:    { id:'nva',  key:'I', name:'엘리멘탈 노바',    mp:46, cd:6.0, base:1.8,  per:0.16,  desc:'화염-뇌전-신성 3중첩 원소 대폭발이 주변을 집어삼킨다' },
+  assassin:  { id:'tst',  key:'I', name:'표창 폭풍',        mp:40, cd:4.0, base:0.9,  per:0.08,  desc:'16발의 표창을 4파 부채꼴 폭풍으로 흩뿌린다' },
+  bandit:    { id:'grt',  key:'I', name:'골든 룰렛',        mp:36, cd:6.0, base:2.6,  per:0.22,  desc:'메소 300을 걸고 룰렛 — 50% 확률로 폭발 2배 + 600메소 잭팟 (낭만)' },
+};
+// 5차 각성 (전직 아님 — Lv40, 「시원의 현자」)
+const AWAKEN = {
+  lv: 40, atkMul: 1.10, hpMul: 1.10, ultMul: 1.3,
+  title: '시원을 아는 자', npcName: '시원의 현자',
 };
 // 3차 스킬 (Q/W/R 슬롯)
 const SKILL3_DEFS = {
@@ -191,8 +207,8 @@ const MTYPES = {
   lupin:   { name:'루팡',        hp:430,  spd:115, touch:40, exp:270,  meso:[80,135],  aggro:true,  w:40, h:44, dropTier:3, dropRate:0.03, throw:{ vis:'banana', dmg:18 } },
   ironhog: { name:'아이언 호그', hp:780,  spd:150, touch:50, exp:520,  meso:[140,220], aggro:true,  w:54, h:40, dropTier:4, dropRate:0.01, charge:1.3 },
   golem:   { name:'스톤 골렘',   hp:1500, spd:45,  touch:62, exp:1050, meso:[260,400], aggro:true,  w:64, h:70, dropTier:4, dropRate:0.018, kbResist:true },
-  boss:    { name:'머쉬맘',      hp:22000,spd:55,  touch:38, exp:4000, meso:[1500,2500],aggro:true, w:150, h:130, dropTier:4, dropRate:1, isBoss:true },
-  kslime:  { name:'킹 슬라임',   hp:52000,spd:65,  touch:55, exp:9000, meso:[4000,6500],aggro:true, w:170, h:140, dropTier:4, dropRate:1, isBoss:true },
+  boss:    { name:'머쉬맘',      hp:33000,spd:55,  touch:38, exp:4000, meso:[1500,2500],aggro:true, w:150, h:130, dropTier:4, dropRate:1, isBoss:true },
+  kslime:  { name:'킹 슬라임',   hp:78000,spd:65,  touch:55, exp:9000, meso:[4000,6500],aggro:true, w:170, h:140, dropTier:4, dropRate:1, isBoss:true },
   // 황금 해변 (Lv10~16 대체 사냥터)
   clam:    { name:'씨클',        hp:120,  spd:30,  touch:20, exp:60,   meso:[22,40],   aggro:false, w:36, h:26, dropTier:2, dropRate:0.028 },
   octo:    { name:'옥토퍼스',    hp:170,  spd:55,  touch:24, exp:92,   meso:[30,55],   aggro:true,  w:40, h:34, dropTier:2, dropRate:0.03, throw:{ vis:'ink', dmg:20 } },
@@ -202,8 +218,8 @@ const MTYPES = {
   igolem:  { name:'아이스 골렘', hp:5200, spd:45,  touch:88, exp:3400, meso:[600,880], aggro:true,  w:64, h:70, dropTier:4, dropRate:0.02, kbResist:true },
   // 시계탑 (Lv32~40 엔드게임)
   tick:    { name:'티키',        hp:8000, spd:80,  touch:100,exp:5200, meso:[900,1300],aggro:true,  w:44, h:48, dropTier:4, dropRate:0.022 },
-  yeti:    { name:'예티',        hp:130000, spd:70, touch:85, exp:25000, meso:[9000,14000],  aggro:true, w:150, h:150, dropTier:4, dropRate:1, isBoss:true },
-  timekeeper:{ name:'타임키퍼',  hp:240000, spd:80, touch:105,exp:60000, meso:[20000,30000], aggro:true, w:160, h:150, dropTier:4, dropRate:1, isBoss:true },
+  yeti:    { name:'예티',        hp:195000, spd:70, touch:85, exp:25000, meso:[9000,14000],  aggro:true, w:150, h:150, dropTier:4, dropRate:1, isBoss:true },
+  timekeeper:{ name:'타임키퍼',  hp:360000, spd:80, touch:105,exp:60000, meso:[20000,30000], aggro:true, w:160, h:150, dropTier:4, dropRate:1, isBoss:true },
   // 아쿠아 로드 (Lv18~24 대체 사냥터)
   bfish:   { name:'버블피쉬',    hp:600,  spd:70,  touch:46, exp:380,  meso:[95,160],  aggro:false, w:38, h:30, dropTier:3, dropRate:0.03 },
   shark:   { name:'샤크',        hp:950,  spd:145, touch:56, exp:640,  meso:[150,240], aggro:true,  w:58, h:34, dropTier:3, dropRate:0.032, charge:1.35 },
@@ -213,8 +229,11 @@ const MTYPES = {
   // 파라오의 땅 (Lv36~45 최상위)
   cact:    { name:'가시 선인장', hp:12000, spd:40, touch:115, exp:7200, meso:[1300,1900], aggro:true, w:46, h:52, dropTier:4, dropRate:0.025, throw:{ vis:'needle', dmg:52 } },
   mummy:   { name:'미라',        hp:16000, spd:55, touch:130, exp:9800, meso:[1700,2500], aggro:true, w:44, h:50, dropTier:4, dropRate:0.028, kbResist:true },
-  kraken:  { name:'크라켄',      hp:70000,  spd:60, touch:66, exp:12000, meso:[5000,8000],   aggro:true, w:160, h:140, dropTier:4, dropRate:1, isBoss:true },
-  pharaoh: { name:'파라오',      hp:400000, spd:85, touch:135,exp:120000,meso:[35000,50000], aggro:true, w:160, h:150, dropTier:4, dropRate:1, isBoss:true },
+  kraken:  { name:'크라켄',      hp:105000,  spd:60, touch:66, exp:12000, meso:[5000,8000],   aggro:true, w:160, h:140, dropTier:4, dropRate:1, isBoss:true },
+  pharaoh: { name:'파라오',      hp:600000, spd:85, touch:135,exp:120000,meso:[35000,50000], aggro:true, w:160, h:150, dropTier:4, dropRate:1, isBoss:true },
+  // 필드 보스 (일반 사냥터 난입 중간보스 — isBoss 아님, 일반 AI)
+  kshroom:  { name:'킹 버섯돌이',       hp:6000,  spd:95,  touch:24, exp:1200, meso:[400,700],   aggro:true, w:72, h:84, dropTier:3, dropRate:0, fieldBoss:true },
+  gironhog: { name:'자이언트 아이언호그', hp:60000, spd:150, touch:72, exp:9500, meso:[2500,4000], aggro:true, w:96, h:72, dropTier:4, dropRate:0, fieldBoss:true, charge:1.5, kbResist:true },
 };
 
 // ---------- 아이템 (장비 카탈로그) ----------
@@ -347,6 +366,31 @@ const QUESTS = [
     talk:'피라미드의 회랑에서 잠들지 못한 미라들이 배회하네. 30구를 잠재워 주게 — 크로노 아머로 보답하지.' },
   { id:'q16', name:'모래의 왕',         need:{ t:'pharaoh', n:1 }, minLv:43, reward:{ exp:400000, meso:200000, item:{ kind:'weapon', tier:5, rar:4 } },
     talk:'황금 가면의 왕이 사막의 시간마저 지배하려 하네. 파라오를 쓰러뜨리는 자, 전설의 메이플 무기를 가질 자격이 있다!' },
+];
+
+// ---------- 업적 ----------
+// cond.k: kills/boss/maxDmg/meso/book/up/level/quest/visited · reward: 달성 시 메소
+const ACHIEVEMENTS = [
+  { id:'ach_kill1', name:'첫 사냥꾼',       desc:'몬스터 50마리 처치',          cond:{ k:'kills',   n:50 },      reward:500 },
+  { id:'ach_kill2', name:'몬스터 헌터',     desc:'몬스터 1,000마리 처치',        cond:{ k:'kills',   n:1000 },    reward:5000 },
+  { id:'ach_kill3', name:'학살의 전설',     desc:'몬스터 10,000마리 처치',       cond:{ k:'kills',   n:10000 },   reward:50000 },
+  { id:'ach_boss1', name:'보스 슬레이어',   desc:'보스 몬스터 처치',             cond:{ k:'boss',    n:1 },       reward:1000 },
+  { id:'ach_boss2', name:'왕 사냥꾼',       desc:'보스 몬스터 20회 처치',        cond:{ k:'boss',    n:20 },      reward:20000 },
+  { id:'ach_dmg1',  name:'강타',            desc:'한 번에 5,000 데미지',         cond:{ k:'maxDmg',  n:5000 },    reward:3000 },
+  { id:'ach_dmg2',  name:'한방의 미학',     desc:'한 번에 50,000 데미지',        cond:{ k:'maxDmg',  n:50000 },   reward:30000 },
+  { id:'ach_meso1', name:'알부자',          desc:'메소 100,000 보유',            cond:{ k:'meso',    n:100000 },  reward:5000 },
+  { id:'ach_meso2', name:'메소 백만장자',   desc:'메소 1,000,000 보유',          cond:{ k:'meso',    n:1000000 }, reward:50000 },
+  { id:'ach_book1', name:'견습 학자',       desc:'도감에 몬스터 10종 등록',      cond:{ k:'book',    n:10 },      reward:2000 },
+  { id:'ach_book2', name:'몬스터 박사',     desc:'도감에 몬스터 20종 등록',      cond:{ k:'book',    n:20 },      reward:10000 },
+  { id:'ach_book3', name:'도감 완성',       desc:'도감에 모든 몬스터 32종 등록', cond:{ k:'book',    n:32 },      reward:100000 },
+  { id:'ach_up1',   name:'대장장이의 친구', desc:'장비 강화 +5 달성',            cond:{ k:'up',      n:5 },       reward:5000 },
+  { id:'ach_up2',   name:'강화의 달인',     desc:'장비 강화 +10 달성',           cond:{ k:'up',      n:10 },      reward:50000 },
+  { id:'ach_lv1',   name:'어엿한 모험가',   desc:'레벨 20 달성',                 cond:{ k:'level',   n:20 },      reward:5000 },
+  { id:'ach_lv2',   name:'메이플의 영웅',   desc:'레벨 40 달성',                 cond:{ k:'level',   n:40 },      reward:50000 },
+  { id:'ach_q1',    name:'심부름꾼',        desc:'퀘스트 5개 완료',              cond:{ k:'quest',   n:5 },       reward:3000 },
+  { id:'ach_q2',    name:'촌장의 오른팔',   desc:'퀘스트 16개 모두 완료',        cond:{ k:'quest',   n:16 },      reward:50000 },
+  { id:'ach_map1',  name:'방랑자',          desc:'맵 12곳 방문',                 cond:{ k:'visited', n:12 },      reward:5000 },
+  { id:'ach_map2',  name:'세계 일주',       desc:'모든 맵 24곳 방문',            cond:{ k:'visited', n:24 },      reward:30000 },
 ];
 
 // ---------- 맵 ----------
@@ -552,7 +596,7 @@ const MAPS = [
     ladders:[[710,370,FLOOR_Y],[1390,370,FLOOR_Y],[2070,370,FLOOR_Y]],
     spawns:[{t:'mummy',x:400},{t:'mummy',x:750},{t:'mummy',x:1100},{t:'mummy',x:1450},{t:'mummy',x:1800},{t:'mummy',x:2150},{t:'mummy',x:2450},
             {t:'cact',x:600},{t:'cact',x:1300},{t:'cact',x:1950},{t:'tick',x:900},{t:'tick',x:1650}],
-    npcs:[{ id:'merchant', x:160 }],
+    npcs:[{ id:'merchant', x:160 },{ id:'sage5', x:2200 }],
     decor:[{k:'rock',x:350},{k:'cactus',x:1150},{k:'rock',x:1900},{k:'cactus',x:2450}],
     portals:[{ x:60, to:21, appear:'right' },{ x:2540, to:23, appear:'left' }] },
   { name:'파라오의 피라미드', w:1500, floor:FLOOR_Y, bgm:'boss',
@@ -590,6 +634,12 @@ const BGM_TRACKS = {
   sky: { tempo:120,
     mel: [72,76,79,84, 0,79,76,72, 74,77,81,86, 0,81,77,74, 72,76,79,84, 0,84,86,88, 86,84,81,79, 77,76,74,72],
     bass:[48,0,52,0, 55,0,52,0, 50,0,53,0, 57,0,53,0, 48,0,52,0, 55,0,52,0, 53,0,50,0, 48,0,0,0] },
+  bossFinal: { tempo:156,
+    mel: [69,0,69,72, 71,0,68,0, 69,0,69,72, 74,0,71,0, 76,0,74,72, 71,0,69,68, 65,0,68,0, 69,0,0,0],
+    bass:[45,45,0,45, 44,44,0,44, 43,43,0,43, 42,42,0,42, 41,41,0,41, 40,40,0,40, 39,39,0,39, 38,38,45,0] },
+  bossMid: { tempo:138,
+    mel: [62,0,65,62, 69,0,65,62, 60,0,64,60, 67,0,64,0, 65,0,69,65, 72,0,70,69, 67,65,64,62, 62,0,0,0],
+    bass:[38,0,50,38, 0,38,50,0, 36,0,48,36, 0,36,48,0, 41,0,53,41, 0,41,53,0, 43,0,55,43, 45,0,45,0] },
   boss: { tempo:144,
     mel: [69,0,69,71,72,0,71,69, 68,0,68,69,71,0,68,0, 69,0,69,71,72,0,76,0, 74,72,71,72,74,0,76,0],
     bass:[45,45,0,45, 45,45,0,45, 44,44,0,44, 44,44,0,44, 41,41,0,41, 41,41,0,41, 43,43,0,43, 45,45,0,45] },
@@ -690,10 +740,27 @@ function playNoise(vol, dur){
     src.start(); src.stop(audioCtx.currentTime + dur);
   } catch(e){}
 }
+// 타격음 변주: ±15% 피치 + 콤보 5당 반음 상승(최대 +5)
+const SEMI = Math.pow(2, 1 / 12);
+function comboSemis(){
+  try {
+    if (typeof player === 'undefined' || !player || !player.combo) return 0;
+    return Math.min(5, Math.floor((player.combo.n || 0) / 5));
+  } catch(e){ return 0; }
+}
+function varyPitch(base){
+  return base * (0.85 + Math.random() * 0.30) * Math.pow(SEMI, comboSemis());
+}
 const SFX = {
   jump:    () => beep(300, 0.12, 'square', 0.035, 200),
-  hit:     () => { beep(320 + Math.random() * 100, 0.08, 'square', 0.045, -120); playNoise(0.035, 0.05); },
-  crit:    () => { beep(600, 0.15, 'sawtooth', 0.055, -300); playNoise(0.05, 0.09); },
+  hit:     () => { beep(varyPitch(370), 0.08, 'square', 0.045, -120); playNoise(0.035, 0.05); },
+  crit:    () => { beep(varyPitch(620), 0.15, 'sawtooth', 0.055, -300); playNoise(0.05, 0.09); },
+  ult:     () => {
+    beep(70, 0.5, 'sawtooth', 0.09, -30);
+    playNoise(0.06, 0.25);
+    setTimeout(() => { beep(1150, 0.35, 'sine', 0.05, 650); }, 60);
+    setTimeout(() => { beep(1560, 0.30, 'sine', 0.035, 900); }, 140);
+  },
   arrow:   () => beep(700, 0.07, 'square', 0.03, 300),
   magic:   () => beep(450, 0.14, 'sine', 0.05, 250),
   skill:   () => { beep(500, 0.2, 'sawtooth', 0.045, 300); beep(250, 0.25, 'square', 0.035, 150); },
@@ -789,20 +856,20 @@ const game = {
   uiWindow:null,        // null | inv | skill | stat | quest | shop | dialog | job
   dialogNpc:null,
   mapIdx:0, time:0, shake:0,
-  bossRespawn:0, bossAlerted:false, bossRespawnMap:5,
+  bossRespawn:0, bossAlerted:false, bossRespawnMap:5, fieldBossCd:0,
   deadTimer:0, fade:0, fadeDir:0, pendingMap:null,
   cleared:false, saveTimer:0, hasSave:false,
   jobPromptPending:false, uiArm:0, newConfirm:false, flash:0,
-  hitstop:0, kickX:0, kickY:0, skillTab:null, drag:null,
+  hitstop:0, kickX:0, kickY:0, skillTab:null, drag:null, feverT:0,
   notifs:[],
 };
 const player = {
   x:150, y:FLOOR_Y, vx:0, vy:0, w:30, h:48, facing:1,
   onGround:true, groundIsPlat:false, jumpsUsed:0, dropT:0, climbing:null,
-  job:'beginner', job2:null, job3:null, job4:null, level:1, exp:0, sp:0, skills:{},
+  job:'beginner', job2:null, job3:null, job4:null, awaken:false, level:1, exp:0, sp:0, skills:{},
   hp:100, mp:60, meso:0, channel:null,
   potions:{ hp:3, mp:3, hp2:0, mp2:0, hp3:0, mp3:0 }, potionCd:{ hp:0, mp:0 },
-  binds:{}, seqs:{ hunt:['X','C','A','D'], buff:['V','F','R','G'], boss:['V','F','T','Q','A'] }, book:{}, stats:{ kills:0, boss:0, maxDmg:0, deaths:0, time:0 }, visited:{ 0:true },
+  binds:{}, seqs:{ hunt:['X','C','A','D'], buff:['V','F','R','G'], boss:['V','F','T','Q','A'] }, book:{}, stats:{ kills:0, boss:0, maxDmg:0, deaths:0, time:0 }, visited:{ 0:true }, achv:{}, ap:{ str:0, vit:0, int:0, luk:0, free:0 },
   inv:[], equip:{ weapon:null, hat:null, top:null, glove:null, shoe:null },
   buffs:{},
   combo:{ n:0, t:0 },
@@ -814,12 +881,67 @@ let camX = 0;
 
 const curMap = () => MAPS[game.mapIdx];
 const BOSS_OF_MAP = { 5:'boss', 8:'kslime', 11:'yeti', 15:'timekeeper', 18:'kraken', 23:'pharaoh' };
+// 보스맵 전용 BGM (머쉬맘은 기존 곡 유지)
+const BOSS_BGM = { timekeeper:'bossFinal', pharaoh:'bossFinal', kslime:'bossMid', yeti:'bossMid', kraken:'bossMid', boss:'boss' };
+function bossBgmFor(idx){
+  const M = MAPS[idx];
+  if (!M) return null;
+  if (M.bgm !== 'boss') return M.bgm;
+  const name = BOSS_OF_MAP[idx] && BOSS_BGM[BOSS_OF_MAP[idx]];
+  return (name && BGM_TRACKS[name]) ? name : 'boss';
+}
+// ---------- 필드 보스 (일반 사냥터 난입) ----------
+const FIELD_BOSS_RULES = { 1:{ t:'kshroom', minLv:8 }, 2:{ t:'kshroom', minLv:8 }, 7:{ t:'gironhog', minLv:22 } };
+function fieldBossAlive(){
+  return monsters.some(m => m.T.fieldBoss && !m.dead);
+}
+function fieldBossSpawn(t, x, sp){
+  const b = spawnMonster(t, x, sp || null);
+  game.fieldBossCd = 90;
+  notify('필드 보스 「' + b.T.name + '」 등장!');
+  addDmgText(b.x, b.y - b.T.h - 26, b.T.name + '이(가) 나타났다!', '#ff8a8a', true);
+  SFX.boss();
+  game.shake = Math.max(game.shake, 0.5);
+  return b;
+}
+function maybeFieldBossOnLoad(){
+  const R = FIELD_BOSS_RULES[game.mapIdx];
+  if (!R || player.level < R.minLv) return;
+  if ((game.fieldBossCd || 0) > 0 || fieldBossAlive()) return;
+  if (Math.random() >= 0.05) return;
+  const idxs = monsters.map((m, i) => i).filter(i => !monsters[i].T.isBoss && !monsters[i].T.fieldBoss);
+  if (!idxs.length) return;
+  const i = idxs[irand(0, idxs.length - 1)];
+  const victim = monsters[i];
+  monsters.splice(i, 1);
+  fieldBossSpawn(R.t, victim.x, victim.spawner);
+}
+function spawnFieldBossMaybe(sp){
+  const R = FIELD_BOSS_RULES[game.mapIdx];
+  if (!R || player.level < R.minLv) return false;
+  if ((game.fieldBossCd || 0) > 0 || fieldBossAlive()) return false;
+  if (Math.random() >= 0.05) return false;
+  fieldBossSpawn(R.t, sp.x, sp);
+  return true;
+}
+function fieldBossOnKill(m){
+  if (!m.T.fieldBoss) return;
+  game.fieldBossCd = 90;
+  const rar = Math.random() < 0.12 ? 4 : 3;
+  drops.push({ kind:'equip', item:rollEquip(m.T.dropTier, rar), x:m.x, y:m.y - 40, vy:-420, t:0 });
+  for (let i = 0; i < 8; i++){
+    drops.push({ kind:'meso', x:m.x + rand(-90, 90), y:m.y - 40, vy:rand(-440, -240), value:irand(m.T.meso[0], m.T.meso[1]), t:0 });
+  }
+  addDmgText(m.x, m.y - m.T.h - 40, m.T.name + ' 격파!', '#ffd94a', true);
+  game.shake = Math.max(game.shake, 0.7);
+  burstGlow(m.x, m.y - m.T.h / 2, 12, '#ffd94a', true);
+}
 
 // ---------- 스탯 ----------
 function itemUp(inst){
   if (!inst) return 0;
   const u = inst.up | 0;
-  return u < 0 ? 0 : (u > 10 ? 10 : u);
+  return u < 0 ? 0 : (u > 15 ? 15 : u);
 }
 function itemStat(inst, field){
   if (!inst) return 0;
@@ -827,10 +949,10 @@ function itemStat(inst, field){
   return base > 0 ? base + RARITIES[inst.rar].bonus + itemUp(inst) * 2 : 0;
 }
 function buffLevel(id){ return player.buffs[id] ? player.buffs[id].lvl : -1; }
-const maxHp = () => Math.round((100 + (player.level - 1) * 20) * (player.job === 'warrior' ? 1.3 : 1));
-const maxMp = () => Math.round((60 + (player.level - 1) * 12) * (player.job === 'mage' ? 1.6 : 1));
+const maxHp = () => Math.round((100 + (player.level - 1) * 20) * (player.job === 'warrior' ? 1.3 : 1) * (player.awaken ? AWAKEN.hpMul : 1)) + apOf('vit') * 5;
+const maxMp = () => Math.round((60 + (player.level - 1) * 12) * (player.job === 'mage' ? 1.6 : 1)) + apOf('int') * 4;
 function totalAtk(){
-  let a = 8 + player.level * 3 + itemStat(player.equip.weapon, 'atk') + itemStat(player.equip.glove, 'atk');
+  let a = 8 + player.level * 3 + itemStat(player.equip.weapon, 'atk') + itemStat(player.equip.glove, 'atk') + Math.floor(apOf('str') * 0.6) + (player.spAtk || 0);
   const rl = buffLevel('rage');
   if (rl >= 0) a *= 1 + 0.10 + 0.01 * rl;
   const bll = buffLevel('bless');
@@ -841,6 +963,7 @@ function totalAtk(){
   if (apl >= 0) a *= 1.13 + 0.012 * apl;
   const bfl = buffLevel('bfy');
   if (bfl >= 0) a *= 1.20 + 0.018 * bfl;
+  if (player.awaken) a *= AWAKEN.atkMul;
   return Math.round(a);
 }
 function totalDef(){
@@ -850,7 +973,7 @@ function totalDef(){
   return d;
 }
 function critChance(){
-  let c = 0.12 + (player.job === 'archer' ? 0.08 : 0) + (player.job === 'thief' ? 0.06 : 0);
+  let c = 0.12 + (player.job === 'archer' ? 0.08 : 0) + (player.job === 'thief' ? 0.06 : 0) + Math.min(0.15, apOf('luk') * 0.001);
   const fl = buffLevel('focus');
   if (fl >= 0) c += 0.15 + 0.015 * fl;
   if (buffLevel('bless') >= 0) c += 0.05;
@@ -881,12 +1004,14 @@ function mySkills3(){ return player.job3 ? SKILL3_DEFS[player.job] : null; }
 function mySkillsX(){ return player.job3 && player.job2 && SKILL3X_DEFS[player.job2] ? SKILL3X_DEFS[player.job2] : null; }
 function mySkills4(){ return player.job4 ? SKILL4_DEFS[player.job] : null; }
 // ---------- 스킬 퀵슬롯 바인딩 (드래그로 재배치) ----------
-const BIND_KEYS = ['X','C','V','A','D','F','Q','W','R','Y','T','G'];
-const KEY_TIER = { X:1, C:1, V:1, A:2, D:2, F:2, Q:3, W:3, R:3, Y:5, T:4, G:4 };
+const BIND_KEYS = ['X','C','V','A','D','F','Q','W','R','Y','T','G','I'];
+const KEY_TIER = { X:1, C:1, V:1, A:2, D:2, F:2, Q:3, W:3, R:3, Y:5, T:4, G:4, I:6 };
 function allMySkillDefs(){
   const list = [mySkills(), mySkills2(), mySkills3(), mySkills4()].filter(Boolean).flat();
   const xd = mySkillsX();
   if (xd) list.push(xd);
+  const xd4 = mySkills4X();
+  if (xd4) list.push(xd4);
   return list;
 }
 function skillDefById(id){
@@ -902,6 +1027,8 @@ function defaultBindMap(){
   });
   const xd = mySkillsX();
   if (xd) map.Y = xd.id;
+  const xd4 = mySkills4X();
+  if (xd4) map.I = xd4.id;
   return map;
 }
 function bindOf(key){
@@ -913,6 +1040,8 @@ function castSkillById(id){
   if (!id) return;
   const xd = mySkillsX();
   if (xd && xd.id === id){ useSkillSlotX(); return; }
+  const xd4 = mySkills4X();
+  if (xd4 && xd4.id === id){ useSkillSlot4X(); return; }
   const tiers = [[mySkills(), useSkillSlot], [mySkills2(), useSkillSlot2], [mySkills3(), useSkillSlot3], [mySkills4(), useSkillSlot4]];
   for (const [defs, fn] of tiers){
     if (!defs) continue;
@@ -928,11 +1057,20 @@ function castBindKey(key){
   if (t === 1) useSkillSlot(0);
   else if (t === 2) useSkillSlot2(0);
   else if (t === 3 || t === 5) useSkillSlot3(0);
+  else if (t === 6) useSkillSlot4X();
   else useSkillSlot4(0);
 }
 const SEQ_DEFAULTS = { hunt:['X', 'C', 'A', 'D'], buff:['V', 'F', 'R', 'G'], boss:['V', 'F', 'T', 'Q', 'A'] };
+// 편의 기능 해금 레벨
+const FEATURE_LV = { return:10, enhance:10, seqHunt:12, seqBuff:16, seqBoss:24 };
+const SEQ_UNLOCK = { hunt:12, buff:16, boss:24 };
 function castSequence(name){
   name = name || 'hunt';
+  const needLv = SEQ_UNLOCK[name] || 1;
+  if (player.level < needLv){
+    notify('시퀀스(' + (name === 'hunt' ? 'B 사냥' : name === 'buff' ? 'H 버프' : 'J 보스') + ')는 Lv' + needLv + '에 해금됩니다');
+    return;
+  }
   const raw = player.seqs && Array.isArray(player.seqs[name]) && player.seqs[name].length ? player.seqs[name] : SEQ_DEFAULTS[name];
   const seq = raw.filter(k => BIND_KEYS.includes(k));
   seq.forEach((k, i) => {
@@ -943,6 +1081,7 @@ function castSequence(name){
 // 마을 귀환 (3초 시전, 피격 시 취소)
 function startReturn(){
   if (game.state !== 'play') return;
+  if (player.level < FEATURE_LV.return){ notify('마을 귀환(O)은 Lv' + FEATURE_LV.return + '에 해금됩니다'); return; }
   if (game.mapIdx === 0){ notify('이미 마을에 있습니다'); return; }
   if (player.returning != null) return;
   player.returning = 3;
@@ -973,6 +1112,97 @@ function notify(txt){
   game.notifs.push({ txt, t:3 });
   if (game.notifs.length > 4) game.notifs.shift();
 }
+// ---------- 업적 ----------
+function achvValue(kind){
+  switch (kind){
+    case 'kills':   return player.stats.kills || 0;
+    case 'boss':    return player.stats.boss || 0;
+    case 'maxDmg':  return player.stats.maxDmg || 0;
+    case 'meso':    return player.meso || 0;
+    case 'book':    return Object.keys(player.book || {}).filter(k => player.book[k] > 0).length;
+    case 'up': {
+      let mx = 0;
+      const all = player.inv.concat(Object.values(player.equip));
+      for (const it of all) if (it && (it.up | 0) > mx) mx = it.up | 0;
+      return mx;
+    }
+    case 'level':   return player.level;
+    case 'quest': {
+      let n = 0;
+      for (const q of QUESTS) if (player.quests[q.id] && player.quests[q.id].st === 'done') n++;
+      return n;
+    }
+    case 'visited': return Object.keys(player.visited || {}).length;
+  }
+  return 0;
+}
+// 이벤트 시점 전용 (처치/레벨업/퀘스트/강화/맵이동)
+function checkAchievements(){
+  if (!player.achv) player.achv = {};
+  let got = false;
+  for (const a of ACHIEVEMENTS){
+    if (player.achv[a.id]) continue;
+    if (achvValue(a.cond.k) < a.cond.n) continue;
+    player.achv[a.id] = true;
+    player.meso += a.reward;
+    notify('업적 달성: ' + a.name + ' (+' + a.reward.toLocaleString() + '메소)');
+    addDmgText(player.x, player.y - player.h - 44, '업적 달성! ' + a.name, '#ffd94a', true);
+    burstGlow(player.x, player.y - 30, 10, '#ffd94a', true);
+    SFX.questOk();
+    got = true;
+  }
+  if (got) saveGame();
+  return got;
+}
+function loadAchvFromSave(d2){
+  player.achv = {};
+  if (d2 && d2.achv && typeof d2.achv === 'object'){
+    for (const k in d2.achv) if (d2.achv[k] && ACHIEVEMENTS.some(a => a.id === k)) player.achv[k] = true;
+  }
+}
+// ---------- AP 스탯 분배 (레벨업당 3) ----------
+const AP_PER_LEVEL = 3;
+const AP_RESET_COST = 10000;
+function apOf(k){ return (player.ap && player.ap[k]) | 0; }
+function investAp(k){
+  if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+  if (player.ap.free <= 0) return;
+  if (!['str', 'vit', 'int', 'luk'].includes(k)) return;
+  player.ap[k]++;
+  player.ap.free--;
+  SFX.buff();
+  saveGame();
+}
+// SP 환류: 만렙 후 남는 SP를 영구 공격력으로 (5 SP = 공격력 +1, 최대 +100)
+function convertSp(){
+  if ((player.spAtk || 0) >= 100){ notify('SP 환류 한도(+100)에 도달했습니다'); return; }
+  if (player.sp < 5){ notify('SP가 부족합니다 (5 필요)'); return; }
+  player.sp -= 5;
+  player.spAtk = (player.spAtk || 0) + 1;
+  notify('SP 환류: 영구 공격력 +1 (누적 +' + player.spAtk + ')');
+  SFX.buff();
+  saveGame();
+}
+function resetAp(){
+  if (!player.ap) return;
+  const spent = apOf('str') + apOf('vit') + apOf('int') + apOf('luk');
+  if (spent <= 0){ notify('분배된 AP가 없습니다'); return; }
+  if (player.meso < AP_RESET_COST){ notify('초기화 비용이 부족합니다 (' + AP_RESET_COST.toLocaleString() + '메소)'); return; }
+  player.meso -= AP_RESET_COST;
+  player.ap = { str:0, vit:0, int:0, luk:0, free: apOf('free') + spent };
+  notify('AP를 초기화했습니다 (' + AP_RESET_COST.toLocaleString() + '메소 소모)');
+  saveGame();
+}
+// 소급 지급: 저장 시점보다 레벨이 앞서 있으면 부족분 보정
+function reconcileAp(){
+  if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+  const earned = Math.max(0, (player.level - 1)) * AP_PER_LEVEL;
+  const have = apOf('str') + apOf('vit') + apOf('int') + apOf('luk') + apOf('free');
+  if (have < earned){
+    player.ap.free += earned - have;
+    notify('AP ' + (earned - have) + ' 지급! 스탯창(S)에서 분배하세요');
+  }
+}
 
 // ---------- 저장 ----------
 const SAVE_V2 = 'mapleQuestSave_v2';
@@ -980,12 +1210,12 @@ const SAVE_V1 = 'mapleQuestSave_v1';
 function saveGame(){
   try {
     localStorage.setItem(SAVE_V2, JSON.stringify({
-      v:2, job:player.job, job2:player.job2, job3:player.job3, job4:player.job4, level:player.level, exp:player.exp, sp:player.sp,
+      v:2, job:player.job, job2:player.job2, job3:player.job3, job4:player.job4, awaken:player.awaken, level:player.level, exp:player.exp, sp:player.sp,
       skills:player.skills, meso:player.meso, potions:player.potions, binds:player.binds,
-      seqs:player.seqs, book:player.book, stats:player.stats, visited:player.visited,
+      seqs:player.seqs, book:player.book, stats:player.stats, visited:player.visited, achv:player.achv, ap:player.ap, spAtk:player.spAtk || 0,
       inv:player.inv, equip:player.equip, quests:player.quests,
       mapIdx:game.mapIdx, cleared:game.cleared,
-      bossRespawn:Math.max(0, game.bossRespawn), bossAlerted:game.bossAlerted, bossRespawnMap:game.bossRespawnMap,
+      bossRespawn:Math.max(0, game.bossRespawn), bossAlerted:game.bossAlerted, bossRespawnMap:game.bossRespawnMap, creditsShown:!!game.creditsShown,
     }));
   } catch(e){}
 }
@@ -1002,6 +1232,7 @@ function loadSaveData(){
       player.job2 = (JOB2[player.job] && JOB2[player.job].some(o => o.key === d2.job2)) ? d2.job2 : null;
       player.job3 = (player.job2 && JOB3[player.job] && d2.job3 === JOB3[player.job].key) ? d2.job3 : null;
       player.job4 = (player.job3 && JOB4[player.job] && d2.job4 === JOB4[player.job].key) ? d2.job4 : null;
+      player.awaken = !!(player.job4 && d2.awaken);
       player.level = clamp(d2.level, 1, 200);
       player.exp = clamp(d2.exp || 0, 0, 1e9);
       player.sp = Math.max(0, d2.sp || 0);
@@ -1011,6 +1242,8 @@ function loadSaveData(){
         for (const defs of [SKILL_DEFS[player.job], SKILL2_DEFS[player.job2], SKILL3_DEFS[player.job], SKILL4_DEFS[player.job]]){
           if (defs) for (const d of defs) allowed.add(d.id);
         }
+        if (player.job2 && SKILL3X_DEFS[player.job2]) allowed.add(SKILL3X_DEFS[player.job2].id); // 계열 오의
+        if (player.job2 && SKILL4X_DEFS[player.job2]) allowed.add(SKILL4X_DEFS[player.job2].id); // 분기 전용기
         for (const k in d2.skills) if (allowed.has(k)) player.skills[k] = clamp(d2.skills[k] | 0, 0, 10);
       }
       player.meso = Math.max(0, d2.meso || 0);
@@ -1020,6 +1253,9 @@ function loadSaveData(){
     player.seqs = { hunt:[...SEQ_DEFAULTS.hunt], buff:[...SEQ_DEFAULTS.buff], boss:[...SEQ_DEFAULTS.boss] };
     player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
     player.visited = { 0:true };
+    player.achv = {};
+    player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    player.spAtk = 0;
       if (d2.binds && typeof d2.binds === 'object'){
         for (const k in d2.binds) if (BIND_KEYS.includes(k) && typeof d2.binds[k] === 'string') player.binds[k] = d2.binds[k];
       }
@@ -1043,6 +1279,13 @@ function loadSaveData(){
       if (d2.visited && typeof d2.visited === 'object'){
         for (const k in d2.visited) if (MAPS[k | 0]) player.visited[k | 0] = true;
       }
+      loadAchvFromSave(d2);
+      player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+      if (d2.ap && typeof d2.ap === 'object'){
+        for (const k of ['str', 'vit', 'int', 'luk', 'free']) player.ap[k] = clamp(d2.ap[k] | 0, 0, 5000);
+      }
+      reconcileAp();
+      player.spAtk = clamp(d2.spAtk | 0, 0, 100);
       player.inv = Array.isArray(d2.inv) ? d2.inv.filter(validItem).slice(0, 24) : [];
       player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
       if (d2.equip) for (const s of ['weapon','hat','top','glove','shoe']) if (validItem(d2.equip[s]) && ITEMS[d2.equip[s].id].slot === s) player.equip[s] = d2.equip[s];
@@ -1056,6 +1299,7 @@ function loadSaveData(){
       game.bossRespawn = Math.max(0, d2.bossRespawn || 0);
       game.bossAlerted = !!d2.bossAlerted;
       game.bossRespawnMap = BOSS_OF_MAP[d2.bossRespawnMap] ? d2.bossRespawnMap : 5;
+      game.creditsShown = !!d2.creditsShown;
       return true;
     }
     // v1 마이그레이션
@@ -1102,16 +1346,20 @@ function startGame(useSave){
   if (useSave) loaded = loadSaveData();
   if (!loaded){
     try { localStorage.removeItem(SAVE_V2); localStorage.removeItem(SAVE_V1); } catch(e){}
-    player.job = 'beginner'; player.job2 = null; player.job3 = null; player.job4 = null; player.level = 1; player.exp = 0; player.sp = 0; player.skills = {};
+    player.job = 'beginner'; player.job2 = null; player.job3 = null; player.job4 = null; player.awaken = false; player.level = 1; player.exp = 0; player.sp = 0; player.skills = {};
     player.meso = 0; player.potions = { hp:3, mp:3, hp2:0, mp2:0, hp3:0, mp3:0 };
     player.binds = {};
     player.seqs = { hunt:[...SEQ_DEFAULTS.hunt], buff:[...SEQ_DEFAULTS.buff], boss:[...SEQ_DEFAULTS.boss] };
     player.book = {}; player.stats = { kills:0, boss:0, maxDmg:0, deaths:0, time:0 };
     player.visited = { 0:true };
+    player.achv = {};
+    player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    player.spAtk = 0;
     player.inv = []; player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
     player.quests = {};
     game.mapIdx = 0; game.cleared = false;
     game.bossRespawn = 0; game.bossAlerted = false;
+    game.creditsShown = false;
   }
   player.hp = maxHp(); player.mp = maxMp();
   player.buffs = {}; player.cds = {}; player.combo = { n:0, t:0 };
@@ -1156,12 +1404,14 @@ function loadMap(idx, appear){
     spawnMonster(bossType, 950, null);
     if (!game.bossAlerted){ SFX.boss(); game.bossAlerted = true; }
   }
+  maybeFieldBossOnLoad();
+  checkAchievements();
   player.x = appear === 'right' ? M.w - 120 : 120;
   player.y = M.floor; player.vx = 0; player.vy = 0;
   player.onGround = true; player.groundIsPlat = false; player.jumpsUsed = 0;
   player.climbing = null;
   camX = clamp(player.x - W / 2, 0, Math.max(0, M.w - W));
-  setBgm(M.bgm);
+  setBgm(bossBgmFor(idx));
   saveGame();
 }
 
@@ -1225,17 +1475,22 @@ function sellPrice(inst){
 }
 // ---------- 강화 (메소 소비처) ----------
 function enhanceCost(inst){
-  return Math.max(50, Math.round((ITEMS[inst.id].price || 100) * 0.2)) * (itemUp(inst) + 1);
+  const up = itemUp(inst);
+  const base = Math.max(50, Math.round((ITEMS[inst.id].price || 100) * 0.2)) * (up + 1);
+  return up >= 10 ? base * 3 : base; // 초월 구간(+11~15)은 비용 3배
 }
 function enhanceRate(inst){
   const up = itemUp(inst);
+  if (up >= 10) return [0.40, 0.35, 0.30, 0.25, 0.20][up - 10] || 0.2; // 초월
   return up < 4 ? 1.0 : (up < 7 ? 0.7 : (up < 9 ? 0.5 : 0.35));
 }
 function tryEnhance(slot){
+  if (player.level < FEATURE_LV.enhance){ notify('장비 강화는 Lv' + FEATURE_LV.enhance + '에 해금됩니다'); return; }
   const inst = player.equip[slot];
   if (!inst) return;
   const up = itemUp(inst);
-  if (up >= 10){ notify('이미 최대 강화(+10)입니다'); return; }
+  if (up >= 15){ notify('이미 초월 극한(+15)입니다'); return; }
+  if (up >= 10 && player.level < 30){ notify('초월 강화(+11~15)는 Lv30에 해금됩니다'); return; }
   const cost = enhanceCost(inst);
   if (player.meso < cost){ notify('메소가 부족합니다 (' + cost.toLocaleString() + ' 필요)'); return; }
   player.meso -= cost;
@@ -1245,6 +1500,7 @@ function tryEnhance(slot){
     burstGlow(player.x, player.y - 30, 8, '#ffd94a', true);
     SFX.levelup();
     notify(ITEMS[inst.id].name + ' 강화 성공! +' + inst.up);
+    checkAchievements();
   } else {
     SFX.hurt();
     notify('강화 실패… 장비는 무사합니다 (+' + up + ' 유지, 메소만 소모)');
@@ -1371,6 +1627,7 @@ function completeQuest(q){
   notify('퀘스트 완료: ' + q.name);
   SFX.questOk();
   if (rw.exp) gainExp(rw.exp);
+  checkAchievements();
   saveGame();
 }
 
@@ -1427,7 +1684,8 @@ function doJob4Advance(){
 function investSkill(id){
   if (player.sp <= 0) return;
   const xd0 = mySkillsX();
-  const known = (xd0 && xd0.id === id) || [mySkills(), mySkills2(), mySkills3(), mySkills4()]
+  const xd40 = mySkills4X();
+  const known = (xd0 && xd0.id === id) || (xd40 && xd40.id === id) || [mySkills(), mySkills2(), mySkills3(), mySkills4()]
     .some(defs => defs && defs.some(d => d.id === id));
   if (!known) return;
   const cur = skillLevel(id);
@@ -1937,6 +2195,201 @@ function useSkillSlot3(i){
     }
   }
 }
+function mySkills4X(){ return player.job4 && player.job2 && SKILL4X_DEFS[player.job2] ? SKILL4X_DEFS[player.job2] : null; }
+
+// ---------- 분기 전용 4차 오의 (I) ----------
+function useSkillSlot4X(){
+  if (player.climbing || player.prone || player.channel) return;
+  const def = mySkills4X();
+  if (!def){
+    if (player.job3) notify('분기 전용기는 4차 전직(Lv28) 후 열립니다');
+    else notify('먼저 3차 전직(Lv20)이 필요합니다');
+    return;
+  }
+  const lvl = skillLevel(def.id);
+  if (lvl < 1){ notify('스킬창(K)에서 ' + def.name + '에 SP를 투자하세요'); return; }
+  if ((player.cds[def.id] || 0) > 0) return;
+  if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
+  player.mp -= def.mp;
+  player.cds[def.id] = def.cd;
+  const mult = def.base + def.per * lvl;
+  player.castAnim = 0.25;
+  switch (def.id){
+    case 'sbl': {
+      // 크루세이더 · 세인트 블레이드: 전방 대형 박스 최대 8마리 3연타 (성검 강림)
+      const box = { x: player.facing > 0 ? player.x : player.x - 280, y:player.y - 160, w:280, h:175 };
+      addEffect('slash', player.x + player.facing * 70, player.y - 60, player.facing);
+      addEffect('holyburst', player.x + player.facing * 140, player.y - 60, 1);
+      addEffect('impact', player.x + player.facing * 150, player.y - 50, player.facing);
+      game.flash = 0.12;
+      feelHit(0.1, -player.facing);
+      SFX.thunder();
+      let hits = 0;
+      for (const m of monsters){
+        if (m.dead || hits >= 8) continue;
+        if (overlap(box, monsterRect(m))){
+          hitMonster(m, mult);
+          const mm = m;
+          after(0.08, () => { if (game.state === 'play' && !mm.dead) hitMonster(mm, mult); });
+          after(0.16, () => { if (game.state === 'play' && !mm.dead){ hitMonster(mm, mult); addEffect('pillar', mm.x, mm.y, 1); } });
+          hits++;
+        }
+      }
+      break;
+    }
+    case 'rmp': {
+      // 버서커 · 피의 광란참: 주변 대선회 2연타 + 대상당 HP 3% 흡혈 (광폭 강화)
+      const box = { x:player.x - 170, y:player.y - 130, w:340, h:145 };
+      addEffect('whirl', player.x, player.y - 44, player.facing, 'fire');
+      addEffect('slash', player.x + player.facing * 60, player.y - 40, player.facing, 'fire');
+      game.shake = Math.max(game.shake, 0.35);
+      SFX.skill();
+      let hits = 0;
+      for (const m of monsters){
+        if (m.dead || hits >= 8) continue;
+        if (overlap(box, monsterRect(m))){
+          hitMonster(m, mult);
+          const mm = m;
+          after(0.09, () => { if (game.state === 'play' && !mm.dead) hitMonster(mm, mult); });
+          player.hp = Math.min(maxHp(), player.hp + maxHp() * 0.03);
+          hits++;
+        }
+      }
+      if (hits > 0) addDmgText(player.x, player.y - player.h - 12, '+' + Math.round(maxHp() * 0.03 * hits), '#ff8a8a');
+      break;
+    }
+    case 'fwr': {
+      // 레인저 · 숲의 분노: rain 프리미티브 12발 낙하 (애로우 레인 상위호환, 자연 강화)
+      for (let k = 0; k < 12; k++){
+        after(0.04 * k, () => {
+          if (game.state !== 'play') return;
+          pProj.push({
+            kind:'rain',
+            x: player.x + player.facing * (40 + k * 26) + rand(-14, 14),
+            y: player.y - 320 - rand(0, 80),
+            vx: 0, vy: 760, mult, dist:0, maxDist:900,
+          });
+        });
+      }
+      addEffect('buff', player.x, player.y, 1);
+      addEffect('windfan', player.x + player.facing * 30, player.y - 28, player.facing);
+      SFX.skill();
+      break;
+    }
+    case 'rail': {
+      // 석궁사수 · 트윈 레일: pierce 무제한(maxHits 99) 초고속 볼트 2연발 (관통 강화)
+      const fireRail = () => {
+        pProj.push({ kind:'bolt', x:player.x + player.facing * 22, y:player.y - 28, vx:player.facing * 1600, mult, dist:0, maxDist:1300, pierce:true, hit:new Set(), maxHits:99 });
+        addEffect('lightning', player.x + player.facing * 34, player.y - 24, 1);
+        game.flash = Math.max(game.flash, 0.1);
+        feelHit(0.1, -player.facing);
+        SFX.thunder();
+      };
+      fireRail();
+      after(0.15, () => { if (game.state === 'play') fireRail(); });
+      break;
+    }
+    case 'dvj': {
+      // 클레릭 · 디바인 저지먼트: 주변 최대 8마리 빛기둥 + 자가 회복 + 언데드 1.5배 (신성 강화)
+      const healAmt = Math.round(maxHp() * (0.08 + 0.005 * lvl));
+      player.hp = Math.min(maxHp(), player.hp + healAmt);
+      addDmgText(player.x, player.y - player.h - 12, '+' + healAmt, '#66ff8a');
+      addEffect('healburst', player.x, player.y - 30, 1);
+      addEffect('magiccircle', player.x, player.y - 200, 1);
+      game.flash = 0.12;
+      SFX.magic();
+      const targets = monsters
+        .filter(m => !m.dead && Math.abs(m.x - player.x) < 340 && Math.abs((m.y - m.T.h / 2) - (player.y - 30)) < 180)
+        .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))
+        .slice(0, 8);
+      targets.forEach((m, i) => {
+        after(0.06 * i, () => {
+          if (game.state !== 'play' || m.dead) return;
+          addEffect('pillar', m.x, m.y, 1);
+          addEffect('hitstar', m.x, m.y - m.T.h / 2, 1);
+          hitMonster(m, (m.type === 'zshroom' || m.type === 'mummy') ? mult * 1.5 : mult);
+        });
+      });
+      break;
+    }
+    case 'nva': {
+      // 위저드 · 엘리멘탈 노바: 자기 중심 반경 260 원소 폭발 3파 (화염→뇌전→신성, 원소 폭발 강화)
+      for (let w = 0; w < 3; w++){
+        after(0.18 * w, () => {
+          if (game.state !== 'play') return;
+          addEffect(w === 0 ? 'explosion' : (w === 1 ? 'lightning' : 'holyburst'), player.x, player.y - (w === 1 ? 140 : 40), 1);
+          game.flash = Math.max(game.flash, 0.1);
+          game.shake = Math.max(game.shake, 0.3);
+          if (w === 0) burstEmbers(player.x, player.y - 40, 10);
+          SFX.explode();
+          for (const m of monsters){
+            if (m.dead) continue;
+            const dx = m.x - player.x, dy = (m.y - m.T.h / 2) - (player.y - 30);
+            if (dx * dx + dy * dy < 260 * 260) hitMonster(m, mult);
+          }
+        });
+      }
+      break;
+    }
+    case 'tst': {
+      // 어쌔신 · 표창 폭풍: 4파 x 4발 부채꼴 star4 (쿼드러플 스로우 폭풍판, 표창 강화)
+      for (let w = 0; w < 4; w++){
+        after(0.06 * w, () => {
+          if (game.state !== 'play') return;
+          spawnStar(mult, -10, -90, 'star4');
+          spawnStar(mult, -3, -30, 'star4');
+          spawnStar(mult, 4, 30, 'star4');
+          spawnStar(mult, 11, 90, 'star4');
+          SFX.arrow();
+        });
+      }
+      addEffect('whirl', player.x, player.y - 30, player.facing);
+      break;
+    }
+    case 'grt': {
+      // 밴디트 · 골든 룰렛: 메소 300 베팅 도박 폭발 — 50% 대박(피해 2배 + 600메소 반환, EV 0)
+      if (player.meso < 300){ notify('메소가 부족합니다 (300 필요)'); player.mp += def.mp; player.cds[def.id] = 0; break; }
+      player.meso -= 300;
+      const win = Math.random() < 0.5;
+      const gm = mult * (win ? 2 : 1);
+      const cx = player.x + player.facing * 120, cy = player.y - 35;
+      burstGlow(cx, cy, 12, '#ffd94a', false);
+      burstShards(cx, cy, win ? 20 : 10, '#ffd94a');
+      explodeAt(cx, cy, gm); // 반경 120 폭발
+      // 반경 보강: 120~200px 링 추가 판정 (중복 타격 없음)
+      for (const m of monsters){
+        if (m.dead) continue;
+        const dx = m.x - cx, dy = (m.y - m.T.h / 2) - cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= 120 * 120 && d2 < 200 * 200) hitMonster(m, gm);
+      }
+      if (win){
+        player.meso += 600;
+        addDmgText(cx, cy - 60, '대박! +600메소', '#ffd94a', true);
+        game.flash = 0.14;
+      } else {
+        addDmgText(cx, cy - 60, '꽝…', '#a0a0a0');
+      }
+      break;
+    }
+  }
+}
+
+// ---------- 5차 각성 (전직 아님 — NPC 「시원의 현자」에서 실행) ----------
+function doAwaken(){
+  if (!player.job4 || player.awaken || player.level < AWAKEN.lv) return;
+  player.awaken = true;
+  player.sp += 5;
+  player.hp = maxHp(); player.mp = maxMp();
+  addEffect('jobadv', player.x, player.y, 1);
+  addEffect('holyburst', player.x, player.y - 40, 1);
+  game.flash = 0.2;
+  SFX.jobadv();
+  notify('시원(始原)의 힘이 깨어났다! 칭호 「' + AWAKEN.title + '」 획득');
+  notify('공격력 +10% · 최대 HP +10% · 오의 피해 1.3배');
+  game.uiWindow = null;
+  saveGame();
+}
 // ---------- 계열 오의 (Y) ----------
 function useSkillSlotX(){
   if (player.climbing || player.prone || player.channel) return;
@@ -1952,7 +2405,7 @@ function useSkillSlotX(){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * (player.awaken ? AWAKEN.ultMul : 1);
   player.castAnim = 0.25;
   switch (def.id){
     case 'hcx': {
@@ -1963,7 +2416,7 @@ function useSkillSlotX(){
       addEffect('holyburst', player.x + player.facing * 130, player.y - 55, 1);
       game.flash = 0.1;
       feelHit(0.1, -player.facing);
-      SFX.thunder();
+      SFX.ult();
       let hits = 0;
       for (const m of monsters){
         if (m.dead || hits >= 8) continue;
@@ -1974,6 +2427,7 @@ function useSkillSlotX(){
     case 'bfy': addBuff('bfy', def.dur, lvl); addBuff('fz', def.dur, lvl); break;
     case 'wwl': {
       // 질풍노도: 관통 바람 화살 5연발
+      SFX.ult();
       spawnArrow(mult, 0, 'hurr');
       const yy = [-8, -16, 8, -24];
       yy.forEach((yo, i) => {
@@ -1992,7 +2446,7 @@ function useSkillSlotX(){
       addEffect('lightning', player.x + player.facing * 30, player.y - 24, 1);
       game.flash = 0.1;
       feelHit(0.12, -player.facing);
-      SFX.thunder();
+      SFX.ult();
       break;
     }
     case 'sct': {
@@ -2000,9 +2454,9 @@ function useSkillSlotX(){
       player.hp = Math.min(maxHp(), player.hp + maxHp() * (0.30 + 0.025 * lvl));
       addEffect('healburst', player.x, player.y - 30, 1);
       addEffect('holyburst', player.x, player.y - 40, 1);
-      addBuff('bl', 10, lvl);
+      addBuff('bless', 10, lvl);
       game.flash = 0.1;
-      SFX.buff();
+      SFX.ult();
       for (const m of monsters){
         if (m.dead) continue;
         const dx9 = m.x - player.x;
@@ -2012,6 +2466,7 @@ function useSkillSlotX(){
     }
     case 'mtr': {
       // 메테오: 화염 운석 3발 낙하
+      SFX.ult();
       for (let k9 = 0; k9 < 3; k9++){
         after(0.12 * k9, () => {
           if (game.state !== 'play') return;
@@ -2024,6 +2479,7 @@ function useSkillSlotX(){
     }
     case 'sdc': {
       // 암살무도: 그림자 3연쇄 돌진
+      SFX.ult();
       for (let k9 = 0; k9 < 3; k9++){
         after(0.11 * k9, () => {
           if (game.state !== 'play') return;
@@ -2046,6 +2502,7 @@ function useSkillSlotX(){
       // 대박 한탕: 메소 500 소모 황금 대폭발
       if (player.meso < 500){ notify('메소가 부족합니다 (500 필요)'); player.mp += def.mp; player.cds[def.id] = 0; break; }
       player.meso -= 500;
+      SFX.ult();
       burstGlow(player.x + player.facing * 120, player.y - 40, 14, '#ffd94a', false);
       burstShards(player.x + player.facing * 120, player.y - 40, 16, '#ffd94a');
       explodeAt(player.x + player.facing * 130, player.y - 35, mult);
@@ -2076,6 +2533,7 @@ function useSkillSlot4(i){
     case 'rb': {
       // 레이징 블로우: 광역 5연격
       const box = { x: player.facing > 0 ? player.x : player.x - 200, y:player.y - 115, w:200, h:125 };
+      SFX.ult();
       addEffect('slash', player.x + player.facing * 55, player.y - 46, player.facing, 'fire');
       after(0.06, () => { if (game.state === 'play') addEffect('slash', player.x + player.facing * 80, player.y - 34, player.facing, 'fire'); });
       after(0.12, () => { if (game.state === 'play') addEffect('slash', player.x + player.facing * 65, player.y - 22, -player.facing, 'fire'); });
@@ -2098,7 +2556,7 @@ function useSkillSlot4(i){
       addEffect('lightning', player.x + player.facing * 40, player.y - 20, 1);
       game.flash = 0.14;
       feelHit(0.09, -player.facing);
-      SFX.thunder();
+      SFX.ult();
       break;
     case 'wq': addBuff('wq', def.dur, lvl); break;
     case 'gen': {
@@ -2108,7 +2566,7 @@ function useSkillSlot4(i){
       feelHit(0.18, 0);
       addEffect('genesis', player.x, player.y, 1);
       addEffect('magiccircle', player.x, player.y - 260, 1);
-      SFX.thunder();
+      SFX.ult();
       const gt = monsters.filter(m => !m.dead && m.x >= camX - 60 && m.x <= camX + W + 60);
       gt.forEach((m, i) => {
         after(0.05 * i, () => {
@@ -2124,7 +2582,7 @@ function useSkillSlot4(i){
     case 'qd': {
       // 쿼드러플 스로우: 4차 전용 금색 표창, 0.04초 스태거 부채꼴
       spawnStar(mult, -8, -70, 'star4');
-      SFX.arrow();
+      SFX.ult();
       const th4 = [[-4, -25], [0, 25], [4, 70]];
       th4.forEach(([yo, vy2], i) => {
         after(0.04 * (i + 1), () => {
@@ -2262,6 +2720,12 @@ function hitMonster(m, mult){
     feelHit(0.045, 0);
   }
   player.combo.n++; player.combo.t = 2.2;
+  if (player.combo.n === 50 && !(game.feverT > 0)){
+    game.feverT = 20;
+    notify('콤보 50! FEVER TIME — 20초간 경험치 1.5배!');
+    burstGlow(player.x, player.y - 30, 14, '#ffd94a', true);
+    SFX.levelup();
+  }
   if (crit) SFX.crit(); else SFX.hit();
   if (m.hp <= 0) killMonster(m);
   // 피의 격노: 타격 흡혈
@@ -2286,7 +2750,7 @@ function explodeAt(x, y, mult){
     if (dx * dx + dy * dy < 120 * 120) hitMonster(m, mult);
   }
 }
-const M_SHARD = { snail:'#4a74d0', rsnail:'#d05a48', slime:'#5cbf4a', shroom:'#e08a3a', pig:'#f0a0b8', boar:'#8a5040', stump:'#9a7a4e', eye:'#9a5ad0', zshroom:'#8a6ab8', boss:'#d85450', lupin:'#a0703c', ironhog:'#6a7a8a', golem:'#8a8a7a', kslime:'#5cbf4a', clam:'#f0a0b0', octo:'#5a8ad0', fang:'#e8eef6', pepe:'#f0d040', igolem:'#a8c8e0', tick:'#c8a050', yeti:'#e8eef6', timekeeper:'#c8a050', bfish:'#7ac8e8', shark:'#7a92a8', wooly:'#f4f8ff', cpix:'#b08ae8', cact:'#5aa848', mummy:'#d8cca8', kraken:'#8a5ad0', pharaoh:'#ffd94a' };
+const M_SHARD = { snail:'#4a74d0', rsnail:'#d05a48', slime:'#5cbf4a', shroom:'#e08a3a', pig:'#f0a0b8', boar:'#8a5040', stump:'#9a7a4e', eye:'#9a5ad0', zshroom:'#8a6ab8', boss:'#d85450', lupin:'#a0703c', ironhog:'#6a7a8a', golem:'#8a8a7a', kslime:'#5cbf4a', clam:'#f0a0b0', octo:'#5a8ad0', fang:'#e8eef6', pepe:'#f0d040', igolem:'#a8c8e0', tick:'#c8a050', yeti:'#e8eef6', timekeeper:'#c8a050', bfish:'#7ac8e8', shark:'#7a92a8', wooly:'#f4f8ff', cpix:'#b08ae8', cact:'#5aa848', mummy:'#d8cca8', kraken:'#8a5ad0', pharaoh:'#ffd94a', kshroom:'#e08a3a', gironhog:'#6a7a8a' };
 function killMonster(m){
   m.dead = true; m.deadT = 0;
   // 도감 + 기록
@@ -2300,6 +2764,7 @@ function killMonster(m){
     notify('도감 등록: ' + m.T.name + '! (+' + bonus + '메소)');
     SFX.questOk();
   }
+  checkAchievements();
   addEffect('deathburst', m.x, m.y - m.T.h / 2, 1);
   burstShards(m.x, m.y - m.T.h / 2, m.type === 'boss' ? 26 : 9, M_SHARD[m.type] || '#c8c8c8');
   burstGlow(m.x, m.y - m.T.h / 2, 5, '#fff2b0', true);
@@ -2307,6 +2772,7 @@ function killMonster(m){
   gainExp(m.T.exp);
   questOnKill(m.type);
   if (m.spawner) m.spawner.respawnT = 6;
+  fieldBossOnKill(m);
   // 드랍
   drops.push({ kind:'meso', x:m.x + rand(-10, 10), y:m.y - 20, vy:-260, value:irand(m.T.meso[0], m.T.meso[1]), t:0 });
   if (Math.random() < 0.12) drops.push({ kind:'hpPot', x:m.x + rand(-16, 16), y:m.y - 20, vy:-300, t:0 });
@@ -2323,6 +2789,12 @@ function killMonster(m){
       burstGlow(m.x, m.y - 70, 16, '#ffe98a', true);
       game.flash = 0.25;
       addDmgText(m.x, m.y - m.T.h - 60, '사막에 평화가 돌아왔다!', '#ffd94a', true);
+      if (!game.creditsShown){
+        game.creditsShown = true;
+        game.creditsT = 0;
+        game.state = 'credits';
+        setBgm('town');
+      }
     }
     for (let i = 0; i < 6; i++) drops.push({ kind:'meso', x:m.x + rand(-80, 80), y:m.y - 40, vy:rand(-420, -220), value:irand(150, 350), t:0 });
     // 보스별 전용 루트 테이블 — 상위 장비의 주 소스는 보스
@@ -2361,6 +2833,7 @@ function killMonster(m){
 function gainExp(e){
   const hl = buffLevel('hs');
   if (hl >= 0) e = Math.round(e * (1.20 + 0.02 * hl));
+  if (game.feverT > 0) e = Math.round(e * 1.5);
   player.exp += e;
   addDmgText(player.x, player.y - player.h - 26, '+' + e + ' EXP', '#a8ff78');
   let leveled = false;
@@ -2371,6 +2844,8 @@ function gainExp(e){
     leveled = true;
   }
   if (leveled){
+    if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    player.ap.free += AP_PER_LEVEL;
     player.hp = maxHp(); player.mp = maxMp();
     addEffect('levelup', player.x, player.y, 1);
     SFX.levelup();
@@ -2378,6 +2853,11 @@ function gainExp(e){
     if (player.job !== 'beginner' && !player.job2 && player.level >= 15) notify('Lv15 달성! 천공의 수목원 「숲의 현자」를 찾아가세요');
     if (player.job2 && !player.job3 && player.level >= 20) notify('Lv20 달성! 거인의 채석장 「거인의 현자」를 찾아가세요');
     if (player.job3 && !player.job4 && player.level >= 28) notify('Lv28 달성! 얼음 동굴 「설산의 은자」를 찾아가세요');
+    if (player.level === 10) notify('기능 해금: 마을 귀환(O) · 장비 강화(상인)');
+    if (player.level === 12) notify('기능 해금: 사냥 시퀀스(B) — 스킬창에서 편집');
+    if (player.level === 16) notify('기능 해금: 버프 시퀀스(H)');
+    if (player.level === 24) notify('기능 해금: 보스 시퀀스(J)');
+    if (player.job4 && !player.awaken && player.level >= AWAKEN.lv) notify('Lv40 달성! 미라의 회랑 「시원의 현자」를 찾아가세요');
     saveGame();
   }
 }
@@ -2701,7 +3181,7 @@ function updatePlayer(dt){
     player.mp = Math.min(maxMp(), player.mp + 15 * dt);
   } else {
     if (player.onGround && mv === 0) player.hp = Math.min(maxHp(), player.hp + 3.5 * dt);
-    player.mp = Math.min(maxMp(), player.mp + 2.4 * dt);
+    player.mp = Math.min(maxMp(), player.mp + 4.2 * dt);
   }
   // 아이언 바디 재생
   if (buffLevel('iron') >= 0) player.hp = Math.min(maxHp(), player.hp + maxHp() * 0.01 * dt);
@@ -2868,10 +3348,11 @@ function updateBoss(b, dt){
 // ---------- 월드 업데이트 ----------
 function updateWorld(dt){
   const M = curMap();
+  if (game.fieldBossCd > 0) game.fieldBossCd -= dt;
   for (const sp of spawners){
     if (sp.respawnT > 0){
       sp.respawnT -= dt;
-      if (sp.respawnT <= 0) spawnMonster(sp.t, sp.x, sp);
+      if (sp.respawnT <= 0 && !spawnFieldBossMaybe(sp)) spawnMonster(sp.t, sp.x, sp);
     }
   }
   if (game.bossRespawn > 0){
@@ -3021,6 +3502,7 @@ function updateFloaters(dt){
   updateDelayed(dt);
   // 셰이크/킥 감쇠: 전 상태(승리/사망/창 열림)에서 지속되도록 여기서 처리
   // 지수 감쇠 — 초반 펀치 강조, 잔진동 빠르게 컷
+  if (game.feverT > 0) game.feverT -= dt;
   game.shake = Math.max(0, game.shake * Math.pow(0.002, dt) - dt * 0.25);
   game.kickX *= Math.pow(0.0005, dt);
   game.kickY *= Math.pow(0.0005, dt);
@@ -3053,6 +3535,7 @@ function updateAll(dt){
     if (game.fade <= 0){ game.fade = 0; game.fadeDir = 0; }
   }
   if (game.state === 'title') return;
+  if (game.state === 'credits'){ game.creditsT = (game.creditsT || 0) + dt; return; }
   game.uiArm = Math.max(0, game.uiArm - dt);
   updateFloaters(dt);
 
@@ -4005,8 +4488,8 @@ function drawNpc(n, floor){
   ctx.beginPath(); ctx.ellipse(0, 2, 16, 5, 0, 0, 7); ctx.fill();
   if (n.id && n.id.startsWith('sage')){
     // 전직관 현자: 후드 로브 + 지팡이 + 차수색 보주
-    const tier = { sage2:2, sage3:3, sage4:4 }[n.id] || 2;
-    const SAGE_COL = { 2:['#2e6e4a', '#1f4e34', '#3fc46a'], 3:['#7a5230', '#5a3a20', '#ff6a3a'], 4:['#3a5a7e', '#28425e', '#7ad8ff'] }[tier];
+    const tier = { sage2:2, sage3:3, sage4:4, sage5:5 }[n.id] || 2;
+    const SAGE_COL = { 2:['#2e6e4a', '#1f4e34', '#3fc46a'], 3:['#7a5230', '#5a3a20', '#ff6a3a'], 4:['#3a5a7e', '#28425e', '#7ad8ff'], 5:['#5a2e6a', '#42204e', '#ff5ad0'] }[tier];
     // 로브
     ctx.fillStyle = SAGE_COL[0];
     ctx.beginPath();
@@ -4116,13 +4599,23 @@ function drawNpc(n, floor){
     }
   }
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  const NPC_LABEL = { chief:'촌장 (↑)', merchant:'상인 (↑)', sage2:'숲의 현자 (↑)', sage3:'거인의 현자 (↑)', sage4:'설산의 은자 (↑)' };
+  const NPC_LABEL = { chief:'촌장 (↑)', merchant:'상인 (↑)', sage2:'숲의 현자 (↑)', sage3:'거인의 현자 (↑)', sage4:'설산의 은자 (↑)', sage5:'시원의 현자 (↑)' };
   const label = NPC_LABEL[n.id] || '(↑)';
   rr(sx - 34, labelY, 68, 20, 7); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(label, sx, labelY + 14);
   if (n.id && n.id.startsWith('sage')){
     const tier = { sage2:2, sage3:3, sage4:4 }[n.id];
+    if (n.id === 'sage5'){
+      if (player.job4 && !player.awaken && player.level >= AWAKEN.lv){
+        const my5 = floor - 120 + Math.sin(game.time * 3) * 3;
+        ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(60,30,0,0.85)';
+        ctx.strokeText('!', sx, my5);
+        ctx.fillStyle = '#ff5ad0';
+        ctx.fillText('!', sx, my5);
+      }
+    } else {
     const can = tier === 2 ? (player.job !== 'beginner' && !player.job2 && player.level >= 15)
       : tier === 3 ? (player.job2 && !player.job3 && player.level >= 20)
       : (player.job3 && !player.job4 && player.level >= 28);
@@ -4133,6 +4626,7 @@ function drawNpc(n, floor){
       ctx.strokeText('!', sx, my);
       ctx.fillStyle = '#ffd94a';
       ctx.fillText('!', sx, my);
+    }
     }
   }
   if (n.id === 'chief'){
@@ -4254,12 +4748,63 @@ function drawMonsterBody(m, t, flash){
   else if (m.type === 'stump') drawStump(m, t, flash);
   else if (m.type === 'eye') drawEye(m, t, flash);
   else if (m.type === 'zshroom') drawZshroom(m, t, flash);
+  else if (m.type === 'kshroom') drawKshroom(m, t, flash);
+  else if (m.type === 'gironhog') drawGiantIronhog(m, t, flash);
   else if (m.type === 'boss') drawBoss(m, t, flash);
   else if (m.type === 'kslime') drawKslime(m, t, flash);
   else if (m.type === 'yeti') drawYeti(m, t, flash);
   else if (m.type === 'timekeeper') drawTimekeeper(m, t, flash);
   else if (m.type === 'kraken') drawKraken(m, t, flash);
   else if (m.type === 'pharaoh') drawPharaoh(m, t, flash);
+}
+// 필드 보스 드로잉
+function drawKshroom(m, t, flash){
+  ctx.fillStyle = 'rgba(255,150,40,0.18)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 52, 10, 0, 0, 7); ctx.fill();
+  ctx.save();
+  ctx.scale(2, 2);
+  drawShroom(m, t, flash);
+  ctx.fillStyle = flash ? '#eee' : '#ffd94a';
+  ctx.beginPath();
+  ctx.moveTo(-9, -44); ctx.lineTo(-9, -52); ctx.lineTo(-4.5, -46);
+  ctx.lineTo(0, -54); ctx.lineTo(4.5, -46); ctx.lineTo(9, -52); ctx.lineTo(9, -44);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(45,30,22,0.85)'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = '#e0483a';
+  ctx.beginPath(); ctx.arc(0, -48.5, 1.6, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawGiantIronhog(m, t, flash){
+  ctx.fillStyle = 'rgba(255,60,40,0.15)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 64, 11, 0, 0, 7); ctx.fill();
+  ctx.save();
+  ctx.scale(1.8, 1.8);
+  drawBoar(m, t, flash, true);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,60,40,0.55)';
+  ctx.beginPath(); ctx.arc(m.dir * 21, -47, 3.5 + Math.sin(t * 6) * 0.8, 0, 7); ctx.fill();
+}
+function drawMonsterHpName(m, sx){
+  if (m.dead) return;
+  if (m.T.fieldBoss){
+    ctx.fillStyle = '#ffb642'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(m.T.name, sx, m.y - m.T.h - 24);
+    const bw = 74;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    rr(sx - bw / 2 - 1, m.y - m.T.h - 18, bw + 2, 9, 4); ctx.fill();
+    const r = Math.max(0, m.hp / m.maxHp);
+    ctx.fillStyle = '#ff8a3a';
+    if (r > 0.02){ rr(sx - bw / 2, m.y - m.T.h - 17, Math.max(3, bw * r), 7, 3); ctx.fill(); }
+    return;
+  }
+  if (!m.T.isBoss && m.hp < m.maxHp){
+    const bw = 38;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    rr(sx - bw / 2 - 1, m.y - m.T.h - 14, bw + 2, 7, 3); ctx.fill();
+    ctx.fillStyle = '#4ade4a';
+    const r = Math.max(0, m.hp / m.maxHp);
+    if (r > 0.02){ rr(sx - bw / 2, m.y - m.T.h - 13, Math.max(3, bw * r), 5, 2); ctx.fill(); }
+  }
 }
 function drawMonster(m){
   const sx = m.x - camX;
@@ -4303,14 +4848,7 @@ function drawMonster(m){
     ctx.globalAlpha = 1;
   }
   ctx.restore();
-  if (!m.dead && m.type !== 'boss' && m.hp < m.maxHp){
-    const bw = 38;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    rr(sx - bw / 2 - 1, m.y - m.T.h - 14, bw + 2, 7, 3); ctx.fill();
-    ctx.fillStyle = '#4ade4a';
-    const r = Math.max(0, m.hp / m.maxHp);
-    if (r > 0.02){ rr(sx - bw / 2, m.y - m.T.h - 13, Math.max(3, bw * r), 5, 2); ctx.fill(); }
-  }
+  drawMonsterHpName(m, sx);
 }
 function drawSnail(m, t, flash){
   const slide = Math.sin(t * 3) * 0.06;
@@ -7946,7 +8484,7 @@ function quickslotRects(){
   let qx = d3 ? 300 : (d2 ? 336 : 360);
   const rects = [{ key:'Z', x:qx, y:H - 76 + 12, w:sw2, h:52 }];
   qx += sw2 + gap;
-  const unlocked = { 1:true, 2:!!d2, 3:!!d3, 4:!!d4, 5:!!mySkillsX() };
+  const unlocked = { 1:true, 2:!!d2, 3:!!d3, 4:!!d4, 5:!!mySkillsX(), 6:!!mySkills4X() };
   for (const k of BIND_KEYS){
     if (!unlocked[KEY_TIER[k]]) continue;
     rects.push({ key:k, x:qx, y:H - 76 + 12, w:sw2, h:52 });
@@ -8112,7 +8650,7 @@ function drawHUD(){
   ctx.fillStyle = '#3a2a00'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('Lv.' + player.level, 47, H - bh + 33);
   ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('단풍 용사 · ' + jobDisplayName(), 90, H - bh + 22);
+  ctx.fillText('단풍 용사 · ' + jobDisplayName() + (player.awaken ? ' 「' + AWAKEN.title + '」' : ''), 90, H - bh + 22);
   ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '11px sans-serif';
   ctx.fillText('공격력 ' + totalAtk() + '  방어 ' + totalDef() + '  EXP ' + (player.exp / expNeed() * 100).toFixed(1) + '%' + (player.sp > 0 ? '  SP ' + player.sp + ' (K)' : ''), 90, H - bh + 39);
   drawBar(90, H - bh + 46, 175, 11, player.hp / maxHp(), '#ff7a7a', '#d42a2a', Math.ceil(player.hp) + '/' + maxHp());
@@ -8130,7 +8668,8 @@ function drawHUD(){
     sr:'레이', ang:'천사', hs:'심볼', ss:'수리검', sp:'분신', sm:'연막',
     rb:'레이징', en:'격노', ca:'천벌', wq:'질풍', gen:'제네', inf:'무한', qd:'쿼드', sdm:'그림자',
     rst:'레이지', bw:'흡혈', fz:'광란', bolt:'볼트', exar:'파열', aim:'조준', fb:'화염구', chl:'체인', amp:'증폭', dstab:'스탭', mbomb:'메소봄', sstep:'발놀림',
-    hcx:'성십자', bfy:'혈노', wwl:'질풍', snp:'저격', sct:'성역', mtr:'메테오', sdc:'무도', jkp:'한탕' };
+    hcx:'성십자', bfy:'혈노', wwl:'질풍', snp:'저격', sct:'성역', mtr:'메테오', sdc:'무도', jkp:'한탕',
+    sbl:'성검', rmp:'광란참', fwr:'숲분노', rail:'레일', dvj:'저지먼트', nva:'노바', tst:'표창폭풍', grt:'룰렛' };
   const rects = quickslotRects();
   const jobCol = player.job !== 'beginner' ? JOBS[player.job].color : '#8a94b8';
   let lastRect = rects[0];
@@ -8305,6 +8844,18 @@ function drawOverlays(){
       ctx.drawImage(lc, 0, 0);
       ctx.globalAlpha = 1;
     }
+  }
+  // 콤보 피버: 골드 테두리 + 남은 시간
+  if (game.feverT > 0 && game.state === 'play'){
+    const fp = 0.35 + Math.abs(Math.sin(game.time * 4)) * 0.3;
+    ctx.strokeStyle = 'rgba(255,200,60,' + fp + ')';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, W - 6, H - 6);
+    ctx.font = '900 22px sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(90,45,0,0.85)';
+    ctx.strokeText('FEVER x1.5  ' + Math.ceil(game.feverT) + 's', W / 2, 44);
+    ctx.fillStyle = '#ffd94a';
+    ctx.fillText('FEVER x1.5  ' + Math.ceil(game.feverT) + 's', W / 2, 44);
   }
   if (game.flash > 0){
     ctx.fillStyle = 'rgba(255,255,240,' + (game.flash / 0.13) * 0.45 + ')';
@@ -8608,9 +9159,64 @@ function drawTitle(){
 // ============================================================
 // 메인 draw
 // ============================================================
+// 엔딩 크레딧 (파라오 최초 처치 시 1회)
+const CREDITS_LINES = [
+  { t:'메이플 퀘스트 2', big:true },
+  { t:'' },
+  { t:'— 만든 이 —', big:true },
+  { t:'김수용 & Claude' },
+  { t:'' },
+  { t:'— 여정 —', big:true },
+  { t:'단풍 마을에서 시작된 작은 모험' },
+  { t:'전사·궁수·마법사·도적, 그리고 여덟 갈래의 길' },
+  { t:'머쉬맘 · 킹 슬라임 · 예티 · 타임키퍼 · 크라켄' },
+  { t:'그리고 사막의 왕, 파라오까지' },
+  { t:'' },
+  { t:'여덟 대륙, 스물네 개의 사냥터' },
+  { t:'예순 개가 넘는 스킬과 전설의 메이플 무기' },
+  { t:'' },
+  { t:'모든 재앙을 물리친 영웅에게 —', big:false },
+  { t:'플레이해 주셔서 감사합니다!', big:true },
+];
+let creditsStars = null;
+function drawCredits(){
+  const t = game.creditsT || 0;
+  ctx.fillStyle = '#070510';
+  ctx.fillRect(0, 0, W, H);
+  if (!creditsStars){
+    creditsStars = [];
+    for (let i = 0; i < 90; i++){
+      creditsStars.push({ x:h1(i * 3 + 1) * W, y:h1(i * 7 + 2) * H, r:0.6 + h1(i * 13 + 3) * 1.8, tw:h1(i) * 6.28, spd:2 + h1(i * 5) * 10 });
+    }
+  }
+  for (const st of creditsStars){
+    ctx.globalAlpha = 0.25 + 0.6 * Math.abs(Math.sin(t * 1.3 + st.tw));
+    ctx.fillStyle = '#ffffff';
+    const yy = (st.y + t * st.spd) % H;
+    ctx.beginPath(); ctx.arc(st.x, yy, st.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const lineH = 44;
+  const maxScroll = CREDITS_LINES.length * lineH + 40;
+  const scroll = Math.min(t * 42, maxScroll);
+  ctx.textAlign = 'center';
+  for (let i = 0; i < CREDITS_LINES.length; i++){
+    const L = CREDITS_LINES[i];
+    if (!L.t) continue;
+    const y = H + 60 + i * lineH - scroll;
+    if (y < -40 || y > H + 40) continue;
+    ctx.font = L.big ? 'bold 34px sans-serif' : '17px sans-serif';
+    ctx.fillStyle = L.big ? '#ffd94a' : '#e8e4ff';
+    ctx.fillText(L.t, W / 2, y);
+  }
+  ctx.font = '14px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('Enter — 모험으로 돌아가기', W / 2, H - 24);
+}
 function draw(){
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (game.state === 'title'){ drawTitle(); return; }
+  if (game.state === 'credits'){ drawCredits(); return; }
   if (game.shake > 0){
     ctx.translate(rand(-1, 1) * game.shake * 14, rand(-1, 1) * game.shake * 10);
   }
@@ -8880,7 +9486,7 @@ function drawSkillWindow(){
     { name:'1차', sub:JOBS[player.job].name, defs:defs1, lockMsg:null },
     { name:'2차', sub:(job2Info() ? job2Info().name : JOB2[player.job].map(o => o.name).join('/')), defs:mySkills2(), lockMsg:'Lv15에 촌장에게서 2차 전직 (현재 Lv' + player.level + ')' },
     { name:'3차', sub:JOB3[player.job].name, defs:(mySkills3() ? [...mySkills3(), ...(mySkillsX() ? [mySkillsX()] : [])] : null), lockMsg:'Lv20에 3차 전직 시 해금 (현재 Lv' + player.level + ')' },
-    { name:'4차', sub:JOB4[player.job].name, defs:mySkills4(), lockMsg:'Lv28에 촌장에게서 4차 전직 (현재 Lv' + player.level + ')' },
+    { name:'4차', sub:JOB4[player.job].name, defs:(mySkills4() ? [...mySkills4(), ...(mySkills4X() ? [mySkills4X()] : [])] : null), lockMsg:'Lv28에 4차 전직 시 해금 (현재 Lv' + player.level + ')' },
   ];
   if (game.skillTab == null){
     game.skillTab = player.job4 ? 3 : (player.job3 ? 2 : (player.job2 ? 1 : 0));
@@ -8959,8 +9565,11 @@ function drawSeqEditor(wx, ww, wy, wh, seqY){
   const SEQ_ROWS = [['buff', 'H 버프'], ['hunt', 'B 사냥'], ['boss', 'J 보스']];
   let sqy = seqY + 6;
   for (const [nm, lbl] of SEQ_ROWS){
-    ctx.fillStyle = '#8ab8ff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText(lbl, wx + 24, sqy + 16);
+    const needLv = SEQ_UNLOCK[nm] || 1;
+    const locked = player.level < needLv;
+    ctx.fillStyle = locked ? 'rgba(255,255,255,0.35)' : '#8ab8ff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(lbl + (locked ? ' (Lv' + needLv + ')' : ''), wx + 24, sqy + 16);
+    if (locked){ sqy += 26; continue; }
     let tx5 = wx + 86;
     for (const k of BIND_KEYS){
       const arr = (player.seqs && player.seqs[nm]) || [];
@@ -8977,6 +9586,9 @@ function drawSeqEditor(wx, ww, wy, wh, seqY){
   }
   ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('H/B/J = 시퀀스 순차 발동 · O = 마을 귀환 · 스킬을 끌어 퀵슬롯 키에 드롭하면 배치 변경', wx + 86, sqy + 12);
+  if (btn(wx + ww - 250, sqy - 2, 112, 26, 'SP환류 5→공+1', { enabled: player.sp >= 5 && (player.spAtk || 0) < 100, color:'#2e5a7a', hoverColor:'#3a74a0', font:10 })){
+    convertSp();
+  }
   if (btn(wx + ww - 130, sqy - 2, 110, 26, '배치 초기화', { color:'#5a3a3a', hoverColor:'#7a4a4a', font:11 })){
     player.binds = {};
     notify('스킬 배치를 기본값으로 되돌렸습니다');
@@ -8984,7 +9596,7 @@ function drawSeqEditor(wx, ww, wy, wh, seqY){
   }
 }
 function drawStatWindow(){
-  const wx = W / 2 - 200, wy = 46, ww = 400, wh = 556;
+  const wx = W / 2 - 210, wy = 18, ww = 420, wh = 612;
   windowFrame(wx, wy, ww, wh, '캐릭터 정보 · 기록실');
   const rows = [
     ['이름', '단풍 용사'],
@@ -9004,13 +9616,39 @@ function drawStatWindow(){
     ['플레이 시간', Math.floor((player.stats.time || 0) / 60) + '분'],
   ];
   let ry = wy + 76;
-  ctx.font = '14px sans-serif';
+  ctx.font = '13px sans-serif';
   for (const r of rows){
     ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.textAlign = 'left';
     ctx.fillText(r[0], wx + 40, ry);
     ctx.fillStyle = '#fff'; ctx.textAlign = 'right';
     ctx.fillText(r[1], wx + ww - 40, ry);
-    ry += 30;
+    ry += 26;
+  }
+  // ---- AP 스탯 분배 ----
+  ry += 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(wx + 24, ry - 14); ctx.lineTo(wx + ww - 24, ry - 14); ctx.stroke();
+  ctx.fillStyle = '#ffd94a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('AP 분배 (남은 AP: ' + apOf('free') + ')', wx + 40, ry + 4);
+  ry += 16;
+  const AP_ROWS = [
+    ['str', '힘', '공격력 +0.6/pt', apOf('str')],
+    ['vit', '체력', '최대 HP +5/pt', apOf('vit')],
+    ['int', '지력', '최대 MP +4/pt', apOf('int')],
+    ['luk', '운', '치명타 +0.1%/pt', apOf('luk')],
+  ];
+  for (const [key2, lbl2, desc2, val2] of AP_ROWS){
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(lbl2 + '  ' + val2, wx + 40, ry + 6);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px sans-serif';
+    ctx.fillText(desc2, wx + 118, ry + 6);
+    if (btn(wx + ww - 78, ry - 10, 38, 22, '+', { enabled: apOf('free') > 0, color:'#3a7a4a', hoverColor:'#4a9e5a', font:14 })){
+      investAp(key2);
+    }
+    ry += 27;
+  }
+  if (btn(wx + 40, ry - 4, 150, 26, 'AP 초기화 (1만 메소)', { enabled: player.meso >= AP_RESET_COST, color:'#5a3a3a', hoverColor:'#7a4a4a', font:11 })){
+    resetAp();
   }
 }
 function drawQuestWindow(){
@@ -9127,23 +9765,52 @@ function drawEnhanceTab(wx, wy, ww, wh){
       const rate = enhanceRate(inst);
       ctx.fillStyle = RARITIES[inst.rar].color; ctx.font = 'bold 14px sans-serif';
       ctx.fillText(itemLabel(inst), wx + 50, ey2 + 26);
-      ctx.fillStyle = up >= 10 ? '#ffd94a' : 'rgba(255,255,255,0.65)'; ctx.font = '12px sans-serif';
-      ctx.fillText(up >= 10 ? '최대 강화 달성!' : '다음: +' + (up + 1) + '  성공률 ' + Math.round(rate * 100) + '%  비용 ' + cost.toLocaleString() + '메소', wx + 50, ey2 + 48);
+      ctx.fillStyle = up >= 15 ? '#ffd94a' : 'rgba(255,255,255,0.65)'; ctx.font = '12px sans-serif';
+      ctx.fillText(up >= 15 ? '초월 극한 달성!' : (up >= 10 ? '[초월] ' : '') + '다음: +' + (up + 1) + '  성공률 ' + Math.round(rate * 100) + '%  비용 ' + cost.toLocaleString() + '메소' + (up >= 10 && player.level < 30 ? ' (Lv30 해금)' : ''), wx + 50, ey2 + 48);
       // 강화 게이지
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       rr(wx + 420, ey2 + 16, 160, 10, 5); ctx.fill();
-      ctx.fillStyle = '#ffd94a';
-      if (up > 0){ rr(wx + 420, ey2 + 16, 160 * up / 10, 10, 5); ctx.fill(); }
+      ctx.fillStyle = up > 10 ? '#ff8ae0' : '#ffd94a';
+      if (up > 0){ rr(wx + 420, ey2 + 16, 160 * up / 15, 10, 5); ctx.fill(); }
       ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('+' + up + ' / +10', wx + 420, ey2 + 44);
-      if (up < 10 && btn(wx + ww - 150, ey2 + 13, 110, 40, '강화!', { enabled: player.meso >= cost, color:'#8a6a1e', hoverColor:'#b08a2e', font:14 })){
+      ctx.fillText('+' + up + ' / +15', wx + 420, ey2 + 44);
+      if (up < 15 && btn(wx + ww - 150, ey2 + 13, 110, 40, up >= 10 ? '초월!' : '강화!', { enabled: player.meso >= cost && !(up >= 10 && player.level < 30), color: up >= 10 ? '#7a2e6a' : '#8a6a1e', hoverColor: up >= 10 ? '#a03a8a' : '#b08a2e', font:14 })){
         tryEnhance(slot);
       }
     }
     ey2 += 74;
   }
 }
+function drawAwakenDialog(npc){
+  const wx = W / 2 - 280, wy = 140, ww = 560, wh = 300;
+  windowFrame(wx, wy, ww, wh, AWAKEN.npcName);
+  let text, sub;
+  if (player.awaken){
+    text = '그대는 이미 시원(始原)에 닿아 있군.';
+    sub = '칭호 「' + AWAKEN.title + '」 — 그 힘을 마음껏 떨치게.';
+  } else if (!player.job4){
+    text = '아직 그대의 길은 끝나지 않았네.';
+    sub = '먼저 4차 전직(Lv28)을 마치고 오게.';
+  } else if (player.level < AWAKEN.lv){
+    text = '그릇은 완성되었으나, 시간이 더 필요하네.';
+    sub = 'Lv' + AWAKEN.lv + '에 다시 찾아오게. (현재 Lv' + player.level + ')';
+  } else {
+    text = '기다렸네. 전직의 끝, 그 너머 — 이제 각성의 시간일세.';
+    sub = '공격력 +10% · 최대 HP +10% · 오의 피해 1.3배 · 칭호 「' + AWAKEN.title + '」';
+  }
+  ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(text, wx + 36, wy + 90);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px sans-serif';
+  ctx.fillText(sub, wx + 36, wy + 118);
+  let bx = wx + 36;
+  if (!player.awaken && player.job4 && player.level >= AWAKEN.lv){
+    if (btn(bx, wy + 180, 160, 42, '각성 의식', { color:'#8a2e6a', hoverColor:'#b03a8a' })){ doAwaken(); }
+    bx += 176;
+  }
+  if (btn(bx, wy + 180, 100, 42, '닫기')){ game.uiWindow = null; }
+}
 function drawSageDialog(npc){
+  if (npc.id === 'sage5'){ drawAwakenDialog(npc); return; }
   const tier = { sage2:2, sage3:3, sage4:4 }[npc.id];
   const NAME = { 2:'숲의 현자', 3:'거인의 현자', 4:'설산의 은자' }[tier];
   const wx = W / 2 - 280, wy = 140, ww = 560, wh = 300;
@@ -9359,41 +10026,86 @@ function drawJobUpWindow(tier){
 }
 function drawBookWindow(){
   const wx = W / 2 - 390, wy = 50, ww = 780, wh = 540;
-  windowFrame(wx, wy, ww, wh, '몬스터 도감');
+  windowFrame(wx, wy, ww, wh, '도감');
+  if (!game.bookTab) game.bookTab = 'mob';
+  if (btn(wx + 24, wy + 50, 110, 30, '몬스터', { color: game.bookTab === 'mob' ? '#3a5a9e' : '#2a3350', hoverColor:'#4a6ab0', font:12 })) game.bookTab = 'mob';
+  if (btn(wx + 140, wy + 50, 110, 30, '업적', { color: game.bookTab === 'achv' ? '#3a5a9e' : '#2a3350', hoverColor:'#4a6ab0', font:12 })) game.bookTab = 'achv';
+  if (game.bookTab === 'mob') drawBookMobTab(wx, wy, ww, wh);
+  else drawBookAchvTab(wx, wy, ww, wh);
+}
+function drawBookMobTab(wx, wy, ww, wh){
   const types = Object.keys(MTYPES);
   const found = types.filter(t2 => (player.book[t2] || 0) > 0).length;
-  ctx.fillStyle = '#ffe28a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('발견 ' + found + ' / ' + types.length + '  ·  처음 잡는 몬스터는 도감 등록 보너스!', wx + ww / 2, wy + 62);
-  const cell = 118, ch2 = 112;
+  ctx.fillStyle = '#ffe28a'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('발견 ' + found + ' / ' + types.length + ' · 첫 처치는 등록 보너스!', wx + ww - 24, wy + 70);
+  const cell = 90, ch2 = 100;
   types.forEach((t2, i) => {
-    const cx4 = wx + 24 + (i % 6) * (cell + 6);
-    const cy4 = wy + 76 + Math.floor(i / 6) * (ch2 + 6);
+    const cx4 = wx + 24 + (i % 8) * (cell + 4);
+    const cy4 = wy + 96 + Math.floor(i / 8) * (ch2 + 4);
     const cnt = player.book[t2] || 0;
     const T2 = MTYPES[t2];
+    const special = T2.isBoss || T2.fieldBoss;
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
     rr(cx4, cy4, cell, ch2, 10); ctx.fill();
-    ctx.strokeStyle = cnt > 0 ? (T2.isBoss ? '#ffd94a' : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = cnt > 0 && T2.isBoss ? 2 : 1;
+    ctx.strokeStyle = cnt > 0 ? (special ? '#ffd94a' : 'rgba(255,255,255,0.25)') : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = cnt > 0 && special ? 2 : 1;
     rr(cx4, cy4, cell, ch2, 10); ctx.stroke();
-    // 미니 초상 (실물 드로잉 재사용)
     ctx.save();
     ctx.beginPath(); ctx.rect(cx4 + 2, cy4 + 2, cell - 4, ch2 - 4); ctx.clip();
-    ctx.translate(cx4 + cell / 2, cy4 + 74);
-    const sc = Math.min(0.62, 52 / T2.h);
+    ctx.translate(cx4 + cell / 2, cy4 + 64);
+    const sc = Math.min(0.5, 46 / T2.h);
     ctx.scale(sc, sc);
     const fake = { type:t2, T:T2, dir:1, animT:game.time + i, hp:T2.hp, maxHp:T2.hp, dead:false, spawnT:0, squash:0, hitFlash:0, chase:false, landed:true, stun:0, kb:0 };
     drawMonsterBody(fake, game.time + i, false);
     ctx.restore();
     if (cnt > 0){
-      ctx.fillStyle = T2.isBoss ? '#ffd94a' : '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(T2.name, cx4 + cell / 2, cy4 + 90);
-      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px sans-serif';
-      ctx.fillText(cnt.toLocaleString() + '마리 처치', cx4 + cell / 2, cy4 + 104);
+      ctx.fillStyle = special ? '#ffd94a' : '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(T2.name, cx4 + cell / 2, cy4 + 80);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '9px sans-serif';
+      ctx.fillText(cnt.toLocaleString() + '마리', cx4 + cell / 2, cy4 + 93);
     } else {
       ctx.fillStyle = 'rgba(14,12,26,0.88)';
       rr(cx4 + 2, cy4 + 2, cell - 4, ch2 - 4, 9); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('?', cx4 + cell / 2, cy4 + 62);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('?', cx4 + cell / 2, cy4 + 58);
+    }
+  });
+}
+function drawBookAchvTab(wx, wy, ww, wh){
+  const achv = player.achv || {};
+  const doneN = ACHIEVEMENTS.filter(a => achv[a.id]).length;
+  ctx.fillStyle = '#ffe28a'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('달성 ' + doneN + ' / ' + ACHIEVEMENTS.length, wx + ww - 24, wy + 70);
+  ACHIEVEMENTS.forEach((a, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const ax = wx + 24 + col * 372;
+    const ay = wy + 92 + row * 43;
+    const aw = 360, ah = 40;
+    const done = !!achv[a.id];
+    const val = Math.min(achvValue(a.cond.k), a.cond.n);
+    ctx.fillStyle = done ? 'rgba(255,217,74,0.10)' : 'rgba(255,255,255,0.05)';
+    rr(ax, ay, aw, ah, 8); ctx.fill();
+    ctx.strokeStyle = done ? '#ffd94a' : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = done ? 1.6 : 1;
+    rr(ax, ay, aw, ah, 8); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = done ? '#ffd94a' : '#fff'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(a.name, ax + 12, ay + 16);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '10px sans-serif';
+    ctx.fillText(a.desc, ax + 12, ay + 31);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = done ? '#ffd94a' : 'rgba(255,255,255,0.7)'; ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(done ? '달성!' : val.toLocaleString() + ' / ' + a.cond.n.toLocaleString(), ax + aw - 12, ay + 16);
+    ctx.fillStyle = '#ffe28a'; ctx.font = '10px sans-serif';
+    ctx.fillText('+' + a.reward.toLocaleString() + '메소', ax + aw - 12, ay + 31);
+    if (!done){
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      rr(ax + 12, ay + ah - 5, aw - 24, 3, 1); ctx.fill();
+      const r = val / a.cond.n;
+      if (r > 0.01){
+        ctx.fillStyle = '#7ab0ff';
+        rr(ax + 12, ay + ah - 5, Math.max(2, (aw - 24) * r), 3, 1); ctx.fill();
+      }
     }
   });
 }
@@ -9566,7 +10278,7 @@ function drawWindows(){
 
 // ---------- 키보드 ----------
 const HANDLED = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyZ','KeyX','KeyC','KeyV',
-  'KeyA','KeyD','KeyF','KeyQ','KeyW','KeyR','KeyY','KeyT','KeyG','KeyB','KeyH','KeyJ','KeyO','KeyN','KeyE','KeyK','KeyS','KeyL','KeyM','KeyP',
+  'KeyA','KeyD','KeyF','KeyQ','KeyW','KeyR','KeyY','KeyT','KeyG','KeyI','KeyB','KeyH','KeyJ','KeyO','KeyN','KeyE','KeyK','KeyS','KeyL','KeyM','KeyP',
   'Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Enter','Escape'];
 addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return; // 브라우저 단축키 보호
@@ -9594,6 +10306,10 @@ function onKeyPress(code){
     return;
   }
   if (game.state === 'victory'){
+    if (code === 'Enter') game.state = 'play';
+    return;
+  }
+  if (game.state === 'credits'){
     if (code === 'Enter') game.state = 'play';
     return;
   }
@@ -9641,7 +10357,7 @@ function onKeyPress(code){
     return;
   }
   if (code === 'Space'){ jumpPressed(); return; }
-  const bindKeyMap = { KeyX:'X', KeyC:'C', KeyV:'V', KeyA:'A', KeyD:'D', KeyF:'F', KeyQ:'Q', KeyW:'W', KeyR:'R', KeyY:'Y', KeyT:'T', KeyG:'G' };
+  const bindKeyMap = { KeyX:'X', KeyC:'C', KeyV:'V', KeyA:'A', KeyD:'D', KeyF:'F', KeyQ:'Q', KeyW:'W', KeyR:'R', KeyY:'Y', KeyT:'T', KeyG:'G', KeyI:'I' };
   if (bindKeyMap[code]){ castBindKey(bindKeyMap[code]); return; }
   if (code === 'KeyB'){ castSequence('hunt'); return; }
   if (code === 'KeyH'){ castSequence('buff'); return; }
