@@ -1539,9 +1539,8 @@ function updateParticles(dt){
     }
   }
 }
-// 히트스톱(타격 순간 슬로우) + 카메라 킥
+// 타격 반동: 카메라 킥만 사용 (히트스톱 슬로우는 끊김 체감으로 제거)
 function feelHit(strength, dir){
-  game.hitstop = Math.max(game.hitstop, strength);
   if (dir) game.kickX = clamp(game.kickX + dir * strength * 55, -9, 9);
 }
 // 지연 실행 큐: 히트스톱 슬로우를 함께 타는 연출용 (setTimeout 금지)
@@ -6594,11 +6593,7 @@ function frame(now){
   lastT = now;
   if (!(dt > 0)) dt = 0.016;   // 음수/NaN 방어 (가상 타이머, 시계 되감김)
   if (dt > 0.05) dt = 0.05;
-  // 히트스톱: 강타 순간 짧은 슬로우모션 (타격감)
-  if (game.hitstop > 0){
-    game.hitstop = Math.max(0, game.hitstop - dt);
-    dt *= 0.14;
-  }
+  // 히트스톱(슬로우모션)은 끊김 체감으로 제거됨 — 타격감은 셰이크/킥/파티클로만 표현
   if (shotPose === 'attack') player.attackAnim = 0.12;
   if (shotPose === 'cast') player.castAnim = 0.15;
   if (shotPose === 'walk'){ keys.ArrowRight = true; }
