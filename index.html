@@ -28,6 +28,33 @@ const JOBS = {
   archer:  { name:'궁수',   desc:'빠른 원거리 화살과 높은 치명타', startWeapon:'bow1',   color:'#5ac25a' },
   mage:    { name:'마법사', desc:'마법 공격과 풍부한 MP, 회복 보호막', startWeapon:'staff1', color:'#7a6ae0' },
 };
+// 2차 전직 (Lv15, 촌장)
+const JOB2 = {
+  warrior: { key:'crusader', name:'크루세이더', color:'#f0923a',
+    desc:'검기의 극의에 도달한 성전사. 다중 타격과 지면 파동으로 전장을 지배한다.' },
+  archer:  { key:'ranger', name:'레인저', color:'#3fc46a',
+    desc:'숲의 지배자. 쉴 새 없는 연사와 하늘을 덮는 화살비로 적을 소탕한다.' },
+  mage:    { key:'cleric', name:'클레릭', color:'#e8d05a',
+    desc:'신성한 빛의 사제. 관통하는 성시와 치유의 기적, 축복을 다룬다.' },
+};
+// 2차 스킬 (A/D/F 슬롯)
+const SKILL2_DEFS = {
+  warrior: [
+    { id:'bd',   key:'A', name:'브랜디시',     mp:14, cd:0.7,  base:1.3,  per:0.12, desc:'전방의 적 최대 4마리를 2연타로 벤다' },
+    { id:'swv',  key:'D', name:'쇼크 웨이브',  mp:20, cd:2.5,  base:1.8,  per:0.15, desc:'대검을 내리쳐 관통 충격파를 날린다' },
+    { id:'ib',   key:'F', name:'아이언 바디',  mp:25, cd:32,   base:0.15, per:0.015, dur:30, desc:'30초간 받는 피해 감소 + HP 재생' },
+  ],
+  archer: [
+    { id:'sf',   key:'A', name:'스트레이프',   mp:16, cd:1.0,  base:0.7,  per:0.06, desc:'화살 4발을 폭풍처럼 연사한다' },
+    { id:'arn',  key:'D', name:'애로우 레인',  mp:24, cd:3.0,  base:1.0,  per:0.10, desc:'하늘에서 화살 8발이 쏟아진다' },
+    { id:'hk',   key:'F', name:'호크 아이',    mp:25, cd:32,   base:0.10, per:0.01, dur:30, desc:'30초간 공격 속도 증가' },
+  ],
+  mage: [
+    { id:'ha',   key:'A', name:'홀리 애로우',  mp:14, cd:0.8,  base:1.6,  per:0.14, desc:'적을 관통하는 성스러운 화살' },
+    { id:'heal', key:'D', name:'힐',           mp:26, cd:4.0,  base:0.20, per:0.02, desc:'HP를 회복하고 주변 언데드에 신성 피해' },
+    { id:'bl',   key:'F', name:'블레스',       mp:25, cd:32,   base:0.10, per:0.01, dur:30, desc:'30초간 공격력·방어·치명타 상승' },
+  ],
+};
 
 // ---------- 몬스터 ----------
 // dropTier: 장비 드랍 티어(0=없음), dropRate: 장비 드랍 확률
@@ -359,7 +386,7 @@ const game = {
 const player = {
   x:150, y:FLOOR_Y, vx:0, vy:0, w:30, h:48, facing:1,
   onGround:true, groundIsPlat:false, jumpsUsed:0, dropT:0, climbing:null,
-  job:'beginner', level:1, exp:0, sp:0, skills:{},
+  job:'beginner', job2:null, level:1, exp:0, sp:0, skills:{},
   hp:100, mp:60, meso:0,
   potions:{ hp:3, mp:3 }, potionCd:{ hp:0, mp:0 },
   inv:[], equip:{ weapon:null, hat:null, top:null },
@@ -386,21 +413,28 @@ function totalAtk(){
   let a = 8 + player.level * 3 + itemStat(player.equip.weapon, 'atk');
   const rl = buffLevel('rage');
   if (rl >= 0) a *= 1 + 0.10 + 0.01 * rl;
+  const bll = buffLevel('bless');
+  if (bll >= 0) a *= 1.10 + 0.01 * bll;
   return Math.round(a);
 }
 function totalDef(){
-  return itemStat(player.equip.hat, 'def') + itemStat(player.equip.top, 'def');
+  let d = itemStat(player.equip.hat, 'def') + itemStat(player.equip.top, 'def');
+  const bll = buffLevel('bless');
+  if (bll >= 0) d += 10 + bll;
+  return d;
 }
 function critChance(){
   let c = 0.12 + (player.job === 'archer' ? 0.08 : 0);
   const fl = buffLevel('focus');
   if (fl >= 0) c += 0.15 + 0.015 * fl;
+  if (buffLevel('bless') >= 0) c += 0.05;
   return c;
 }
 const moveSpd = () => 285 * (player.job === 'archer' ? 1.08 : 1);
 const expNeed = () => Math.floor(20 * Math.pow(player.level, 1.7));
 function skillLevel(id){ return player.skills[id] || 0; }
 function mySkills(){ return SKILL_DEFS[player.job] || null; }
+function mySkills2(){ return player.job2 ? SKILL2_DEFS[player.job] : null; }
 
 // ---------- 알림 ----------
 function notify(txt){
@@ -414,7 +448,7 @@ const SAVE_V1 = 'mapleQuestSave_v1';
 function saveGame(){
   try {
     localStorage.setItem(SAVE_V2, JSON.stringify({
-      v:2, job:player.job, level:player.level, exp:player.exp, sp:player.sp,
+      v:2, job:player.job, job2:player.job2, level:player.level, exp:player.exp, sp:player.sp,
       skills:player.skills, meso:player.meso, potions:player.potions,
       inv:player.inv, equip:player.equip, quests:player.quests,
       mapIdx:game.mapIdx, cleared:game.cleared,
@@ -431,6 +465,7 @@ function loadSaveData(){
     try { d2 = JSON.parse(localStorage.getItem(SAVE_V2)); } catch(e){ d2 = null; }
     if (d2 && typeof d2.level === 'number'){
       player.job = JOBS[d2.job] ? d2.job : 'beginner';
+      player.job2 = (JOB2[player.job] && d2.job2 === JOB2[player.job].key) ? d2.job2 : null;
       player.level = clamp(d2.level, 1, 200);
       player.exp = Math.max(0, d2.exp || 0);
       player.sp = Math.max(0, d2.sp || 0);
@@ -457,6 +492,7 @@ function loadSaveData(){
     try { d1 = JSON.parse(localStorage.getItem(SAVE_V1)); } catch(e){ d1 = null; }
     if (d1 && typeof d1.level === 'number'){
       player.job = 'beginner';
+      player.job2 = null;
       player.level = clamp(d1.level, 1, 200);
       player.exp = Math.max(0, d1.exp || 0);
       player.sp = 0; player.skills = {};
@@ -489,7 +525,7 @@ function startGame(useSave){
   if (useSave) loaded = loadSaveData();
   if (!loaded){
     try { localStorage.removeItem(SAVE_V2); localStorage.removeItem(SAVE_V1); } catch(e){}
-    player.job = 'beginner'; player.level = 1; player.exp = 0; player.sp = 0; player.skills = {};
+    player.job = 'beginner'; player.job2 = null; player.level = 1; player.exp = 0; player.sp = 0; player.skills = {};
     player.meso = 0; player.potions = { hp:3, mp:3 };
     player.inv = []; player.equip = { weapon:null, hat:null, top:null };
     player.quests = {};
@@ -721,10 +757,22 @@ function doJobAdvance(jobKey){
   game.jobPromptPending = false;
   saveGame();
 }
+function doJob2Advance(){
+  if (player.job === 'beginner' || player.job2 || player.level < 15) return;
+  player.job2 = JOB2[player.job].key;
+  player.sp += 3;
+  player.hp = maxHp(); player.mp = maxMp();
+  addEffect('jobadv', player.x, player.y, 1);
+  SFX.jobadv();
+  notify(JOB2[player.job].name + '(으)로 2차 전직했습니다!');
+  game.uiWindow = null;
+  saveGame();
+}
 function investSkill(id){
   if (player.sp <= 0) return;
-  const defs = mySkills();
-  if (!defs || !defs.some(d => d.id === id)) return;
+  const defs = mySkills(), defs2 = mySkills2();
+  const known = (defs && defs.some(d => d.id === id)) || (defs2 && defs2.some(d => d.id === id));
+  if (!known) return;
   const cur = skillLevel(id);
   if (cur >= 10) return;
   player.skills[id] = cur + 1;
@@ -832,6 +880,99 @@ function useSkillSlot(i){
 function spawnArrow(mult, yOff){
   pProj.push({ kind:'arrow', x:player.x + player.facing * 16, y:player.y - 28 + (yOff || 0), vx:player.facing * 760, mult, dist:0, maxDist:540 });
 }
+// ---------- 2차 스킬 (A/D/F) ----------
+function useSkillSlot2(i){
+  if (player.climbing || player.prone) return;
+  const defs = mySkills2();
+  if (!defs){
+    notify(player.job === 'beginner' ? 'Lv8에 전직하면 스킬을 배웁니다' : 'Lv15에 촌장에게서 2차 전직할 수 있습니다');
+    return;
+  }
+  const def = defs[i];
+  const lvl = skillLevel(def.id);
+  if (lvl < 1){ notify('스킬창(K)에서 ' + def.name + '에 SP를 투자하세요'); return; }
+  if ((player.cds[def.id] || 0) > 0) return;
+  if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
+  player.mp -= def.mp;
+  player.cds[def.id] = def.cd;
+  const mult = def.base + def.per * lvl;
+  player.castAnim = 0.25;
+  switch (def.id){
+    case 'bd': {
+      // 브랜디시: 전방 최대 4마리 2연타
+      const box = { x: player.facing > 0 ? player.x : player.x - 150, y:player.y - 100, w:150, h:110 };
+      addEffect('slash', player.x + player.facing * 50, player.y - 40, player.facing);
+      addEffect('slash', player.x + player.facing * 70, player.y - 30, player.facing);
+      SFX.skill();
+      let hits = 0;
+      for (const m of monsters){
+        if (m.dead || hits >= 4) continue;
+        if (overlap(box, monsterRect(m))){
+          hitMonster(m, mult);
+          if (!m.dead) hitMonster(m, mult);
+          hits++;
+        }
+      }
+      break;
+    }
+    case 'swv':
+      // 쇼크 웨이브: 관통 지면 충격파
+      pProj.push({ kind:'wave2', x:player.x + player.facing * 26, y:player.y - 12, vx:player.facing * 520, mult, dist:0, maxDist:520, pierce:true, hit:new Set() });
+      game.shake = Math.max(game.shake, 0.2);
+      addEffect('spawnpoof', player.x + player.facing * 30, player.y - 10, 1);
+      SFX.boss();
+      break;
+    case 'ib': addBuff('iron', def.dur, lvl); break;
+    case 'sf':
+      // 스트레이프: 4연발
+      spawnArrow(mult, -14);
+      spawnArrow(mult, -7);
+      spawnArrow(mult, 0);
+      spawnArrow(mult, -21);
+      SFX.arrow();
+      setTimeout(() => SFX.arrow(), 70);
+      break;
+    case 'arn': {
+      // 애로우 레인: 전방 상공에서 8발 낙하
+      for (let k = 0; k < 8; k++){
+        pProj.push({
+          kind:'rain',
+          x: player.x + player.facing * (46 + k * 30) + rand(-10, 10),
+          y: player.y - 300 - rand(0, 70),
+          vx: 0, vy: 720, mult, dist:0, maxDist:900,
+        });
+      }
+      addEffect('buff', player.x, player.y, 1);
+      SFX.skill();
+      break;
+    }
+    case 'hk': addBuff('hawk', def.dur, lvl); break;
+    case 'ha':
+      // 홀리 애로우: 관통 성시
+      pProj.push({ kind:'holy', x:player.x + player.facing * 18, y:player.y - 28, vx:player.facing * 640, mult, dist:0, maxDist:520, pierce:true, hit:new Set() });
+      SFX.magic();
+      break;
+    case 'heal': {
+      const amount = Math.round(maxHp() * mult);
+      player.hp = Math.min(maxHp(), player.hp + amount);
+      addDmgText(player.x, player.y - player.h - 12, '+' + amount, '#66ff8a');
+      addEffect('healburst', player.x, player.y - 30, 1);
+      SFX.buff();
+      // 언데드 특효
+      const um = 2.0 + 0.2 * lvl;
+      for (const m of monsters){
+        if (m.dead || m.type !== 'zshroom') continue;
+        const dx = m.x - player.x;
+        if (Math.abs(dx) < 220 && Math.abs((m.y - m.T.h / 2) - (player.y - 30)) < 140){
+          addEffect('lightning', m.x, m.y - m.T.h, 1);
+          hitMonster(m, um);
+        }
+      }
+      break;
+    }
+    case 'bl': addBuff('bless', def.dur, lvl); break;
+  }
+}
 
 // ---------- 전투 ----------
 function addDmgText(x, y, txt, color, big){
@@ -913,6 +1054,7 @@ function gainExp(e){
     addEffect('levelup', player.x, player.y, 1);
     SFX.levelup();
     if (player.job === 'beginner' && player.level >= 8) game.jobPromptPending = true;
+    if (player.job !== 'beginner' && !player.job2 && player.level >= 15) notify('Lv15 달성! 촌장에게서 2차 전직이 가능합니다');
     saveGame();
   }
 }
@@ -921,6 +1063,8 @@ function hurtPlayer(dmg, fromX){
   let d = dmg * rand(0.9, 1.1);
   const sl = buffLevel('shield');
   if (sl >= 0) d *= 1 - (0.20 + 0.02 * sl);
+  const il = buffLevel('iron');
+  if (il >= 0) d *= 1 - (0.15 + 0.015 * il);
   const reduced = Math.max(1, Math.round(d - totalDef() * 0.7 - player.level * 0.3));
   player.hp -= reduced;
   player.invul = 1.3;
@@ -1054,6 +1198,8 @@ function doBasicAttack(){
   const job = player.job;
   if (job === 'archer'){
     player.cdBasic = 0.42;
+    const hl0 = buffLevel('hawk');
+    if (hl0 >= 0) player.cdBasic *= 1 - (0.10 + 0.01 * hl0);
     player.attackAnim = 0.2;
     spawnArrow(1.0, 0);
     SFX.arrow();
@@ -1148,6 +1294,8 @@ function updatePlayer(dt){
     if (player.onGround && mv === 0) player.hp = Math.min(maxHp(), player.hp + 3.5 * dt);
     player.mp = Math.min(maxMp(), player.mp + 2.4 * dt);
   }
+  // 아이언 바디 재생
+  if (buffLevel('iron') >= 0) player.hp = Math.min(maxHp(), player.hp + maxHp() * 0.01 * dt);
 }
 
 // ---------- 몬스터 업데이트 ----------
@@ -1279,16 +1427,25 @@ function updateWorld(dt){
   for (let i = pProj.length - 1; i >= 0; i--){
     const p = pProj[i];
     p.x += p.vx * dt;
-    p.dist += Math.abs(p.vx) * dt;
+    if (p.vy) p.y += p.vy * dt;
+    p.dist += (Math.abs(p.vx) + Math.abs(p.vy || 0)) * dt;
     let remove = p.dist > p.maxDist || p.x < 0 || p.x > M.w;
+    if (p.kind === 'rain' && p.y > M.floor - 4){
+      addEffect('djump', p.x, M.floor, 1);
+      remove = true;
+    }
     if (!remove){
       for (const m of monsters){
-        if (m.dead) continue;
+        if (m.dead || m.spawnT > 0) continue;
+        if (p.pierce && p.hit.has(m)) continue;
         const r = monsterRect(m);
         if (p.x > r.x && p.x < r.x + r.w && p.y > r.y - 24 && p.y < r.y + r.h + 6){
-          if (p.kind === 'bomb') explodeAt(p.x, p.y, p.mult);
-          else hitMonster(m, p.mult);
-          remove = true;
+          if (p.kind === 'bomb'){ explodeAt(p.x, p.y, p.mult); remove = true; }
+          else {
+            hitMonster(m, p.mult);
+            if (p.pierce){ p.hit.add(m); if (p.hit.size >= 8) remove = true; }
+            else remove = true;
+          }
           break;
         }
       }
@@ -1738,12 +1895,12 @@ function drawDecor(d, floor){
     ctx.beginPath(); ctx.ellipse(0, -88, 58, 36, 0, Math.PI, 0); ctx.fill();
     ctx.fillStyle = '#c05a78';
     ctx.beginPath(); ctx.ellipse(-8, -96, 40, 22, -0.1, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,240,0.85)';
-    ctx.beginPath(); ctx.arc(-26, -104, 8, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(16, -112, 10, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(40, -96, 6, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    ctx.beginPath(); ctx.ellipse(-14, -102, 26, 10, -0.3, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,240,0.9)';
+    ctx.beginPath(); ctx.arc(-30, -100, 6, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(12, -114, 7.5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(42, -94, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.ellipse(-12, -106, 20, 7, -0.35, 0, 7); ctx.fill();
   } else if (d.k === 'house'){
     ctx.fillStyle = '#d9b06a';
     ctx.fillRect(-66, -86, 132, 86);
@@ -2612,13 +2769,18 @@ function drawPlayer(){
   ctx.fillRect(-3, -18.5, 6, 5);
   // 직업 디테일
   if (player.job === 'warrior'){
-    ctx.fillStyle = '#d8dce8';
-    rr(-13, -37, 26, 7, 3); ctx.fill();   // 어깨 갑주
+    ctx.fillStyle = player.job2 ? '#e8c05a' : '#d8dce8';
+    rr(-13, -37, 26, 7, 3); ctx.fill();   // 어깨 갑주 (2차: 금장)
   } else if (player.job === 'mage'){
     ctx.fillStyle = st.topD;
     ctx.beginPath();
     ctx.moveTo(-12, -14); ctx.lineTo(-15, -2); ctx.lineTo(15, -2); ctx.lineTo(12, -14);
     ctx.closePath(); ctx.fill();          // 로브 자락
+    if (player.job2){
+      ctx.fillStyle = '#e8d05a';
+      ctx.fillRect(-14, -5, 28, 2.5);      // 클레릭 금테
+      ctx.fillRect(-2, -34, 4, 18);        // 성직자 세로줄
+    }
   } else if (player.job === 'archer'){
     ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-12, -34); ctx.lineTo(12, -18); ctx.stroke();  // 화살통 끈
@@ -2840,7 +3002,7 @@ function drawPlayer(){
     // 궁수 두건 깃털
     ctx.fillStyle = '#2a6236';
     ctx.beginPath(); ctx.ellipse(0, headY - 10, 16.5, 5.5, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#e05a4a';
+    ctx.fillStyle = player.job2 ? '#e8c05a' : '#e05a4a';
     ctx.save();
     ctx.translate(-10, headY - 13);
     ctx.rotate(-0.5);
@@ -2909,7 +3071,7 @@ function drawProjectiles(){
       ctx.beginPath(); ctx.arc(sx + dir * 1, p.y - 2, 2.8, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(150,190,255,0.45)'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(sx - dir * 12, p.y, 5.5, 0, 7); ctx.stroke();
-    } else {
+    } else if (p.kind === 'bomb'){
       ctx.fillStyle = '#e8a03a';
       ctx.beginPath(); ctx.arc(sx, p.y, 7.5, 0, 7); ctx.fill();
       ctx.fillStyle = '#f8d060';
@@ -2918,6 +3080,57 @@ function drawProjectiles(){
         ctx.fillStyle = 'rgba(255,170,70,' + (0.4 - i * 0.1) + ')';
         ctx.beginPath(); ctx.arc(sx - dir * i * 9, p.y + Math.sin(game.time * 20 + i) * 2, 6 - i, 0, 7); ctx.fill();
       }
+    } else if (p.kind === 'wave2'){
+      // 지면 충격파
+      ctx.save();
+      ctx.translate(sx, p.y);
+      ctx.scale(dir, 1);
+      for (let i = 0; i < 3; i++){
+        const a = 0.85 - i * 0.22;
+        ctx.strokeStyle = 'rgba(150,210,255,' + a + ')';
+        ctx.lineWidth = 5 - i;
+        ctx.beginPath();
+        ctx.arc(-i * 13, -2, 15 + i * 4, -2.2, -0.9);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(220,240,255,0.85)';
+      ctx.beginPath(); ctx.ellipse(4, -13, 8, 13, -0.3, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(160,190,220,0.4)';
+      ctx.beginPath(); ctx.ellipse(-14, -4, 10, 5, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    } else if (p.kind === 'rain'){
+      // 낙하 화살
+      ctx.strokeStyle = 'rgba(200,230,255,0.3)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(sx, p.y - 26); ctx.lineTo(sx, p.y - 8); ctx.stroke();
+      ctx.strokeStyle = '#b89868'; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.moveTo(sx, p.y - 15); ctx.lineTo(sx, p.y + 9); ctx.stroke();
+      ctx.fillStyle = '#e8ecf4';
+      ctx.beginPath();
+      ctx.moveTo(sx, p.y + 16); ctx.lineTo(sx - 4.5, p.y + 6); ctx.lineTo(sx + 4.5, p.y + 6);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e05a4a';
+      ctx.beginPath();
+      ctx.moveTo(sx, p.y - 15); ctx.lineTo(sx - 4, p.y - 20); ctx.lineTo(sx + 4, p.y - 20);
+      ctx.closePath(); ctx.fill();
+    } else if (p.kind === 'holy'){
+      const hg2 = ctx.createRadialGradient(sx, p.y, 2, sx, p.y, 16);
+      hg2.addColorStop(0, 'rgba(255,250,220,0.95)');
+      hg2.addColorStop(0.5, 'rgba(255,225,120,0.6)');
+      hg2.addColorStop(1, 'rgba(255,225,120,0)');
+      ctx.fillStyle = hg2;
+      ctx.beginPath(); ctx.arc(sx, p.y, 16, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffe9a0';
+      ctx.beginPath(); ctx.arc(sx, p.y, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(sx + dir, p.y - 2, 2.6, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,240,180,0.7)'; ctx.lineWidth = 2;
+      const tw2 = 5 + Math.sin(game.time * 16) * 2;
+      ctx.beginPath();
+      ctx.moveTo(sx - tw2, p.y); ctx.lineTo(sx + tw2, p.y);
+      ctx.moveTo(sx, p.y - tw2); ctx.lineTo(sx, p.y + tw2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,225,120,0.4)'; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(sx - dir * 26, p.y); ctx.lineTo(sx - dir * 9, p.y); ctx.stroke();
     }
   }
   for (const p of eProj){
@@ -3172,6 +3385,25 @@ function drawEffects(){
       ctx.restore();
       ctx.fillStyle = 'rgba(255,255,255,' + a * 0.85 + ')';
       ctx.beginPath(); ctx.arc(sx, e.y, Math.max(0.5, 10 * (1 - pr)), 0, 7); ctx.fill();
+    } else if (e.kind === 'healburst'){
+      const pr = e.t / 0.6;
+      if (pr > 1) continue;
+      const a = 1 - pr;
+      ctx.strokeStyle = 'rgba(120,255,170,' + a * 0.9 + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(sx, e.y, 26 + pr * 26, 38 + pr * 18, 0, 0, 7); ctx.stroke();
+      for (let i = 0; i < 5; i++){
+        const ang = i * 1.26 + 0.4;
+        const d = 16 + pr * 34;
+        const px2 = sx + Math.cos(ang) * d, py2 = e.y + Math.sin(ang) * d * 0.9 - pr * 22;
+        ctx.strokeStyle = 'rgba(160,255,190,' + a + ')';
+        ctx.lineWidth = 2.6;
+        const cs2 = Math.max(1, 5 * (1 - pr * 0.5));
+        ctx.beginPath();
+        ctx.moveTo(px2 - cs2, py2); ctx.lineTo(px2 + cs2, py2);
+        ctx.moveTo(px2, py2 - cs2); ctx.lineTo(px2, py2 + cs2);
+        ctx.stroke();
+      }
     } else if (e.kind === 'whirl'){
       const pr = e.t / 0.4;
       if (pr > 1) continue;
@@ -3402,7 +3634,7 @@ function drawHUD(){
   ctx.fillStyle = '#3a2a00'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('Lv.' + player.level, 47, H - bh + 33);
   ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
-  const jobName = player.job === 'beginner' ? '초보자' : JOBS[player.job].name;
+  const jobName = player.job2 ? JOB2[player.job].name : (player.job === 'beginner' ? '초보자' : JOBS[player.job].name);
   ctx.fillText('단풍 용사 · ' + jobName, 90, H - bh + 22);
   ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '11px sans-serif';
   ctx.fillText('공격력 ' + totalAtk() + '  방어 ' + totalDef() + '  EXP ' + (player.exp / expNeed() * 100).toFixed(1) + '%' + (player.sp > 0 ? '  SP ' + player.sp + ' (K)' : ''), 90, H - bh + 39);
@@ -3413,30 +3645,35 @@ function drawHUD(){
   ctx.fillText('MP ' + Math.ceil(player.mp) + '/' + maxMp(), 272, H - bh + 69);
   // 퀵슬롯
   const defs = mySkills();
+  const defs2 = mySkills2();
+  const SLOT_LABELS = { ps:'파워', sb:'슬래시', rage:'분노', ds:'더블샷', ab:'애로봄', focus:'집중',
+    mc:'매직', tb:'썬더', shield:'보호막', bd:'브랜디', swv:'파동', ib:'철벽',
+    sf:'연사', arn:'화살비', hk:'호크', ha:'홀리', heal:'힐', bl:'축복' };
+  const mkSlot = (d) => {
+    const lvl = skillLevel(d.id);
+    return { key:d.key, name:SLOT_LABELS[d.id] || d.name.slice(0, 4), cd:player.cds[d.id] || 0, cdMax:d.cd, ok: lvl > 0 && player.mp >= d.mp };
+  };
   const slots = [
     { key:'Z', name:'기본', cd:player.cdBasic, cdMax:0.4, ok:true },
-    ...( [0,1,2].map(i => {
-      if (!defs) return { key:['X','C','V'][i], name:'-', cd:0, cdMax:1, ok:false };
-      const d = defs[i];
-      const lvl = skillLevel(d.id);
-      return { key:d.key, name:d.name.slice(0, 4), cd:player.cds[d.id] || 0, cdMax:d.cd, ok: lvl > 0 && player.mp >= d.mp };
-    })),
+    ...( [0,1,2].map(i => defs ? mkSlot(defs[i]) : { key:['X','C','V'][i], name:'-', cd:0, cdMax:1, ok:false })),
+    ...( defs2 ? [0,1,2].map(i => mkSlot(defs2[i])) : []),
   ];
-  let qx = 360;
+  const sw2 = defs2 ? 46 : 52;
+  let qx = defs2 ? 336 : 360;
   for (const s of slots){
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    rr(qx, H - bh + 12, 52, 52, 8); ctx.fill();
+    rr(qx, H - bh + 12, sw2, 52, 8); ctx.fill();
     ctx.fillStyle = s.ok ? '#dfe8ff' : 'rgba(255,255,255,0.3)';
-    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(s.name, qx + 26, H - bh + 38);
+    ctx.font = 'bold ' + (defs2 ? 11 : 12) + 'px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.name, qx + sw2 / 2, H - bh + 38);
     if (s.cd > 0){
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       const r = Math.min(1, s.cd / s.cdMax);
-      ctx.fillRect(qx, H - bh + 12 + 52 * (1 - r), 52, 52 * r);
+      ctx.fillRect(qx, H - bh + 12 + 52 * (1 - r), sw2, 52 * r);
     }
     ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '10px sans-serif';
-    ctx.fillText('[' + s.key + ']', qx + 26, H - bh + 58);
-    qx += 58;
+    ctx.fillText('[' + s.key + ']', qx + sw2 / 2, H - bh + 58);
+    qx += sw2 + (defs2 ? 4 : 6);
   }
   function slot(x, key, count, color, cdRatio){
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
@@ -3454,11 +3691,16 @@ function drawHUD(){
     ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '10px sans-serif';
     ctx.fillText('[' + key + ']', x + 25, H - bh + 62);
   }
-  slot(qx + 8, '1', player.potions.hp, '#e84545', player.potionCd.hp / POTION_CD.hp);
-  slot(qx + 64, '2', player.potions.mp, '#4576e8', player.potionCd.mp / POTION_CD.mp);
+  slot(qx + 6, '1', player.potions.hp, '#e84545', player.potionCd.hp / POTION_CD.hp);
+  slot(qx + 60, '2', player.potions.mp, '#4576e8', player.potionCd.mp / POTION_CD.mp);
   ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('E 인벤토리  K 스킬  S 스탯  L 퀘스트  ↑ 포탈/NPC/로프  P 정지  M 소리' + (isMuted() ? ' OFF' : ''), qx + 132, H - bh + 30);
-  ctx.fillText('Space 점프x2  ↓+Space 아래점프' + (game.bossRespawn > 0 ? '   보스 리스폰 ' + Math.ceil(game.bossRespawn) + '초' : ''), qx + 132, H - bh + 50);
+  if (defs2){
+    ctx.fillText('E인벤 K스킬 S스탯 L퀘스트 M소리' + (isMuted() ? 'OFF' : ''), qx + 122, H - bh + 30);
+    ctx.fillText('↑포탈·NPC ↓엎드리기' + (game.bossRespawn > 0 ? '  보스 ' + Math.ceil(game.bossRespawn) + '초' : ''), qx + 122, H - bh + 50);
+  } else {
+    ctx.fillText('E 인벤토리  K 스킬  S 스탯  L 퀘스트  ↑ 포탈/NPC/로프  P 정지  M 소리' + (isMuted() ? ' OFF' : ''), qx + 128, H - bh + 30);
+    ctx.fillText('Space 점프x2  ↓ 엎드리기  ↓+Space 아래점프' + (game.bossRespawn > 0 ? '   보스 리스폰 ' + Math.ceil(game.bossRespawn) + '초' : ''), qx + 128, H - bh + 50);
+  }
   // EXP 바
   ctx.fillStyle = '#2a2438';
   ctx.fillRect(0, H - 8, W, 8);
@@ -3904,43 +4146,52 @@ function drawInvWindow(){
   }
 }
 function drawSkillWindow(){
-  const wx = W / 2 - 280, wy = 90, ww = 560, wh = 400;
+  const wx = W / 2 - 290, wy = 36, ww = 580, wh = 576;
   windowFrame(wx, wy, ww, wh, '스킬 (SP: ' + player.sp + ')');
   const defs = mySkills();
   if (!defs){
     ctx.fillStyle = '#dfe8ff'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('Lv8에 촌장을 찾아가 전직하면 스킬을 배울 수 있습니다', wx + ww / 2, wy + 200);
+    ctx.fillText('Lv8에 촌장을 찾아가 전직하면 스킬을 배울 수 있습니다', wx + ww / 2, wy + 280);
     return;
   }
-  let sy = wy + 70;
-  for (const d of defs){
+  function skillRow(d, sy){
     const lvl = skillLevel(d.id);
     ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    rr(wx + 20, sy, ww - 40, 92, 10); ctx.fill();
-    // 아이콘
+    rr(wx + 20, sy, ww - 40, 68, 9); ctx.fill();
     ctx.fillStyle = lvl > 0 ? '#3a5a9e' : '#33333e';
-    rr(wx + 34, sy + 14, 44, 44, 8); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(d.key, wx + 56, sy + 42);
+    rr(wx + 30, sy + 12, 40, 40, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(d.key, wx + 50, sy + 38);
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 15px sans-serif';
-    ctx.fillText(d.name + '  Lv.' + lvl + '/10', wx + 94, sy + 30);
-    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = '12px sans-serif';
-    ctx.fillText(d.desc, wx + 94, sy + 50);
-    let numText;
-    if (d.dur){
-      const now = Math.round((d.base + d.per * Math.max(1, lvl)) * 100);
-      numText = '효과 ' + now + '%  |  지속 ' + d.dur + '초  |  MP ' + d.mp;
-    } else {
-      const now = Math.round((d.base + d.per * Math.max(1, lvl)) * 100);
-      numText = '데미지 ' + now + '%  |  MP ' + d.mp + '  |  쿨타임 ' + d.cd + '초';
-    }
-    ctx.fillStyle = '#8ab8ff';
-    ctx.fillText(numText + (lvl === 0 ? '  (미습득)' : ''), wx + 94, sy + 70);
-    if (btn(wx + ww - 90, sy + 24, 56, 44, '+', { enabled: player.sp > 0 && lvl < 10, color:'#3a7a4a', hoverColor:'#4a9e5a', font:22 })){
+    ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(d.name + '  Lv.' + lvl + '/10', wx + 84, sy + 26);
+    const now = Math.round((d.base + d.per * Math.max(1, lvl)) * 100);
+    const numText = d.dur
+      ? '효과 ' + now + '% · ' + d.dur + '초 · MP' + d.mp
+      : '데미지 ' + now + '% · MP' + d.mp + ' · 쿨 ' + d.cd + '초';
+    ctx.fillStyle = '#8ab8ff'; ctx.font = '11px sans-serif';
+    ctx.fillText(numText + (lvl === 0 ? ' (미습득)' : ''), wx + 84, sy + 44);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(d.desc, wx + 84, sy + 60);
+    if (btn(wx + ww - 84, sy + 14, 52, 40, '+', { enabled: player.sp > 0 && lvl < 10, color:'#3a7a4a', hoverColor:'#4a9e5a', font:20 })){
       investSkill(d.id);
     }
-    sy += 102;
+  }
+  let sy = wy + 58;
+  ctx.fillStyle = '#8ab8ff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('1차 스킬 · ' + JOBS[player.job].name, wx + 24, sy + 10);
+  sy += 20;
+  for (const d of defs){ skillRow(d, sy); sy += 76; }
+  const defs2 = mySkills2();
+  if (defs2){
+    sy += 6;
+    ctx.fillStyle = '#f0c05a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('2차 스킬 · ' + JOB2[player.job].name, wx + 24, sy + 10);
+    sy += 20;
+    for (const d of defs2){ skillRow(d, sy); sy += 76; }
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(player.level >= 15 ? '촌장에게서 2차 전직을 하면 새 스킬 3종이 열립니다!' : 'Lv15에 2차 전직으로 새 스킬 3종이 열립니다 (현재 Lv' + player.level + ')', wx + ww / 2, sy + 40);
   }
 }
 function drawStatWindow(){
@@ -4080,6 +4331,10 @@ function drawDialogWindow(){
     if (btn(bx, wy + 180, 130, 42, '전직 상담', { color:'#5a3a7a', hoverColor:'#7a4a9e' })){ game.uiWindow = 'job'; game.uiArm = 0.25; }
     bx += 146;
   }
+  if (player.job !== 'beginner' && !player.job2 && player.level >= 15){
+    if (btn(bx, wy + 180, 130, 42, '2차 전직', { color:'#8a6a1e', hoverColor:'#b08a2e' })){ game.uiWindow = 'job2'; game.uiArm = 0.25; }
+    bx += 146;
+  }
   if (btn(bx, wy + 180, 100, 42, '닫기')){ game.uiWindow = null; }
 }
 function drawJobWindow(){
@@ -4153,6 +4408,38 @@ function drawJobWindow(){
   ctx.fillStyle = '#ffb0b0'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('전직은 되돌릴 수 없습니다. 신중히 선택하세요! (1/2/3 키로도 선택 가능, ESC 나중에)', wx + ww / 2, wy + wh - 24);
 }
+function drawJob2Window(){
+  const wx = W / 2 - 260, wy = 90, ww = 520, wh = 430;
+  const J2 = JOB2[player.job];
+  const defs2 = SKILL2_DEFS[player.job];
+  windowFrame(wx, wy, ww, wh, '2차 전직');
+  ctx.fillStyle = J2.color; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(J2.name, wx + ww / 2, wy + 92);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px sans-serif';
+  ctx.fillText(J2.desc, wx + ww / 2, wy + 122);
+  let sy = wy + 152;
+  ctx.textAlign = 'left';
+  for (const d of defs2){
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    rr(wx + 40, sy, ww - 80, 44, 8); ctx.fill();
+    ctx.fillStyle = '#3a5a9e';
+    rr(wx + 48, sy + 8, 28, 28, 6); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(d.key, wx + 62, sy + 27);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(d.name, wx + 86, sy + 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '11px sans-serif';
+    ctx.fillText(d.desc, wx + 86, sy + 37);
+    sy += 52;
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('전직 시 SP +3 · 스킬창(K)에서 새 스킬에 투자하세요', wx + ww / 2, sy + 18);
+  if (btn(wx + ww / 2 - 150, wy + wh - 66, 180, 46, J2.name + ' 전직!', { color:'#8a6a1e', hoverColor:'#b08a2e', enabled: game.uiArm <= 0 })){
+    doJob2Advance();
+  }
+  if (btn(wx + ww / 2 + 46, wy + wh - 66, 104, 46, '나중에')){ game.uiWindow = null; }
+}
 function drawWindows(){
   if (!game.uiWindow) { pendingClick = null; return; }
   switch (game.uiWindow){
@@ -4163,13 +4450,14 @@ function drawWindows(){
     case 'shop': drawShopWindow(); break;
     case 'dialog': drawDialogWindow(); break;
     case 'job': drawJobWindow(); break;
+    case 'job2': drawJob2Window(); break;
   }
   pendingClick = null;
 }
 
 // ---------- 키보드 ----------
 const HANDLED = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyZ','KeyX','KeyC','KeyV',
-  'KeyE','KeyK','KeyS','KeyL','KeyM','KeyP','Digit1','Digit2','Digit3','Enter','Escape'];
+  'KeyA','KeyD','KeyF','KeyE','KeyK','KeyS','KeyL','KeyM','KeyP','Digit1','Digit2','Digit3','Enter','Escape'];
 addEventListener('keydown', e => {
   if (HANDLED.includes(e.code)) e.preventDefault();
   if (e.repeat) return;
@@ -4215,6 +4503,9 @@ function onKeyPress(code){
       if (code === 'Digit2') doJobAdvance('archer');
       if (code === 'Digit3') doJobAdvance('mage');
     }
+    if (game.uiWindow === 'job2' && game.uiArm <= 0){
+      if (code === 'Digit1' || code === 'Enter') doJob2Advance();
+    }
     return;
   }
   if (game.state !== 'play') return;
@@ -4226,6 +4517,9 @@ function onKeyPress(code){
   if (code === 'KeyX'){ useSkillSlot(0); return; }
   if (code === 'KeyC'){ useSkillSlot(1); return; }
   if (code === 'KeyV'){ useSkillSlot(2); return; }
+  if (code === 'KeyA'){ useSkillSlot2(0); return; }
+  if (code === 'KeyD'){ useSkillSlot2(1); return; }
+  if (code === 'KeyF'){ useSkillSlot2(2); return; }
   if (code === 'Digit1'){ usePotion('hp'); return; }
   if (code === 'Digit2'){ usePotion('mp'); return; }
   if (code === 'ArrowUp'){
@@ -4252,6 +4546,15 @@ try {
       player.level = parseInt(sp.get('lv') || '12', 10) || 12;
       doJobAdvance(job);
       game.uiWindow = null;
+      if (sp.has('job2')){
+        player.level = Math.max(player.level, 16);
+        doJob2Advance();
+        player.sp = 30;
+        for (const d of SKILL2_DEFS[player.job]){
+          for (let k = 0; k < 5; k++) investSkill(d.id);
+        }
+        game.uiWindow = null;
+      }
     }
     const mi = parseInt(sp.get('map') || '1', 10) || 0;
     loadMap(Math.max(0, Math.min(MAPS.length - 1, mi)), 'left');
@@ -4274,6 +4577,8 @@ function frame(now){
   if (shotPose === 'cast') player.castAnim = 0.15;
   if (shotPose === 'walk'){ keys.ArrowRight = true; }
   if (shotPose === 'prone'){ keys.ArrowDown = true; }
+  if (shotPose === 'skillA') useSkillSlot2(0);
+  if (shotPose === 'skillD') useSkillSlot2(1);
   updateAll(dt);
   draw();
   drawWindows();
