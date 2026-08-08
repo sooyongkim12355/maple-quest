@@ -30,7 +30,7 @@ const JOBS = {
   mage:    { name:'마법사', desc:'마법 공격과 풍부한 MP, 회복 보호막', startWeapon:'staff1', color:'#7a6ae0' },
   thief:   { name:'도적',   desc:'빠른 표창 투척과 날렵한 몸놀림', startWeapon:'dagger1', color:'#c05ae0' },
 };
-// 2차 전직 (Lv15, 촌장) — 직업마다 2계열 중 선택
+// 2차 전직 (Lv18, 숲의 현자) — 직업마다 2계열 중 선택
 const JOB2 = {
   warrior: [
     { key:'crusader', name:'크루세이더', color:'#f0923a',
@@ -57,7 +57,7 @@ const JOB2 = {
       desc:'단검의 춤꾼. 질풍 같은 근접 연격과 메소 폭탄의 낭만.' },
   ],
 };
-// 3차 전직 (Lv20, 촌장)
+// 3차 전직 (Lv30, 거인의 현자)
 const JOB3 = {
   warrior: { key:'hero', name:'히어로', color:'#ff6a3a',
     desc:'전설이 된 검사. 대지를 가르는 일격과 불굴의 심장을 지녔다.' },
@@ -68,7 +68,7 @@ const JOB3 = {
   thief:   { key:'hermit', name:'허밋', color:'#8a3ae0',
     desc:'은둔의 고수. 수리검의 폭풍과 그림자 분신을 다룬다.' },
 };
-// 4차 전직 (Lv28, 촌장)
+// 4차 전직 (Lv45, 설산의 은자)
 const JOB4 = {
   warrior: { key:'saint', name:'검성', color:'#ff4a2a',
     desc:'검의 신화. 한 번의 휘두름이 다섯 번의 참격이 된다.' },
@@ -146,7 +146,7 @@ const SKILL4X_DEFS = {
 };
 // 5차 각성 (전직 아님 — Lv40, 「시원의 현자」)
 const AWAKEN = {
-  lv: 40, atkMul: 1.10, hpMul: 1.10, ultMul: 1.3,
+  lv: 60, atkMul: 1.10, hpMul: 1.10, ultMul: 1.3,
   title: '시원을 아는 자', npcName: '시원의 현자',
 };
 // 3차 스킬 (Q/W/R 슬롯)
@@ -190,6 +190,47 @@ const SKILL4_DEFS = {
     { id:'qd',  key:'T', name:'쿼드러플 스로우', mp:32, cd:0.8, base:0.85, per:0.07, desc:'표창 4발을 부채꼴로 동시에 던진다' },
     { id:'sdm', key:'G', name:'그림자 지배',     mp:42, cd:60,  base:0.15, per:0.012, dur:30, desc:'30초간 치명타·이동 속도 상승' },
   ],
+};
+
+// ---------- 계열 태그 (분기 특화 패시브 — 2차 전직 시 자동 적용, 저장 필드 없음) ----------
+// 규칙: 공격 스킬만 태그. 버프(dur 보유)·회복/유틸(heal·sm·sct)은 무태그 = 계열 무관(배율 1.0).
+const SPEC_BONUS = 1.25;   // 자기 계열 스킬 피해 +25%
+const SPEC_PENALTY = 0.85; // 비계열 공격 스킬 피해 -15%
+const BRANCH_AFFINITY = {
+  crusader:'blade', berserker:'rage',   // 전사: 검기 / 광기
+  ranger:'multi',   sniper:'pierce',    // 궁수: 속사 / 관통
+  cleric:'holy',    wizard:'elem',      // 마법사: 신성 / 원소
+  assassin:'star',  bandit:'dagger',    // 도적: 표창 / 단검
+};
+const TAG_INFO = {
+  blade:{ label:'검기' }, rage:{ label:'광기' }, multi:{ label:'속사' }, pierce:{ label:'관통' },
+  holy:{ label:'신성' }, elem:{ label:'원소' }, star:{ label:'표창' }, dagger:{ label:'단검' },
+};
+const SKILL_TAGS = {
+  // 1차 (직업 공유 — 두 분기 몫으로 분리)
+  ps:'rage', sb:'blade',      // 전사: 파워 스트라이크(단일 파쇄)=광기 / 슬래시 블라스트(광역 검격)=검기
+  ds:'multi', ab:'pierce',    // 궁수: 더블 샷=속사 / 애로우 봄(파열 화살의 전신)=관통
+  mc:'elem', tb:'elem',       // 마법사: 매직 클로·썬더 볼트=원소 (신성 계열은 2차 홀리 애로우부터)
+  l7:'star', sv:'dagger',     // 도적: 럭키 세븐=표창 / 새비지 블로우=단검
+  // 2차 (분기 전용 — 자기 계열)
+  bd:'blade', swv:'blade', rst:'rage', bw:'rage',
+  sf:'multi', arn:'multi', bolt:'pierce', exar:'pierce',
+  ha:'holy', fb:'elem', chl:'elem',
+  ts:'star', sdash:'star', dstab:'dagger', mbomb:'dagger',
+  // 3차 (직업 공유 — 어느 분기가 강화받는지 명시)
+  bs:'blade', eq:'rage',      // 브레이브 슬래시(검기) → 크루세이더 / 어스 스플리터(대지 파쇄 난전) → 버서커 (검기 지면 파동은 2차 swv가 담당)
+  hur:'multi', phx:'pierce',  // 폭풍의 시(14연사) → 레인저 / 피닉스(관통) → 석궁사수
+  sr:'holy', ang:'holy',      // 샤이닝 레이(빛기둥)·엔젤 스트라이크(성폭발) → 클레릭 (위저드는 fb·chl·mtr·nva 원소 축)
+  ss:'star',                  // 수리검 폭풍 → 어쌔신
+  // 4차 (직업 공유)
+  rb:'rage',                  // 레이징 블로우(광기의 5연격) → 버서커
+  ca:'pierce',                // 천벌의 화살(단발 대관통) → 석궁사수
+  gen:'holy',                 // 제네시스(빛의 정화) → 클레릭
+  qd:'star',                  // 쿼드러플 스로우 → 어쌔신
+  // 계열 오의 3X (분기 전용 — bfy는 버프, sct는 회복 중심 유틸이라 무태그)
+  hcx:'blade', wwl:'multi', snp:'pierce', mtr:'elem', sdc:'star', jkp:'dagger',
+  // 분기 전용 4차 오의 4X
+  sbl:'blade', rmp:'rage', fwr:'multi', rail:'pierce', dvj:'holy', nva:'elem', tst:'star', grt:'dagger',
 };
 
 // ---------- 몬스터 ----------
@@ -243,6 +284,13 @@ const MTYPES = {
   veye:     { name:'심연 감시자', hp:40000, spd:60, touch:172, exp:22000, meso:[3600,5000], aggro:true, w:44, h:36, dropTier:5, dropRate:0.008, throw:{ vis:'void', dmg:72 } },
   voidlord: { name:'공허 군주',   hp:1500000, spd:90, touch:170, exp:300000, meso:[80000,120000], aggro:true, w:170, h:160, dropTier:5, dropRate:1, isBoss:true },
 };
+
+// ---------- 길라잡이 (레벨별 추천 사냥터: [맵, 권장 최소 Lv] 오름차순) ----------
+const GUIDE_SPOTS = [
+  [1, 1], [2, 8], [3, 9], [12, 10], [13, 13], [4, 14], [6, 16], [16, 18],
+  [19, 20], [7, 20], [17, 21], [20, 23], [9, 24], [10, 28], [14, 32],
+  [21, 36], [22, 40], [25, 45], [26, 48], [27, 50],
+];
 
 // ---------- 펫 (상점 구매 동반자 — 드랍 자석 + 메소 보너스) ----------
 const PETS = {
@@ -427,7 +475,7 @@ const MAPS = [
     npcs:[{ id:'chief', x:420 },{ id:'merchant', x:700 }],
     decor:[{k:'house',x:200},{k:'house',x:1150},{k:'tree',x:330},{k:'tree',x:900},{k:'tree',x:1400},{k:'sign',x:1440}],
     portals:[{ x:1540, to:1, appear:'left' },{ x:80, to:6, appear:'left' },{ x:1300, to:24, appear:'left' }] },
-  { name:'초원 길', w:2600, floor:FLOOR_Y, bgm:'field',
+  { name:'초원 길', w:2600, floor:FLOOR_Y, respawn:5, bgm:'field',
     theme:{ sky1:'#7ec8f0', sky2:'#dff5ff', hill:'#79c267', hill1:'#a9dc96', hill2:'#74c061', hill3:'#4c9c40', ground:'#8a5a34', grass:'#63b04b' },
     plats:[[350,460,180],[700,380,160],[1050,460,200],[1500,400,180],[1950,460,200],[2300,380,160]],
     ladders:[[1140,460,FLOOR_Y]],
@@ -436,7 +484,7 @@ const MAPS = [
             {t:'rsnail',x:1400},{t:'rsnail',x:2250}],
     npcs:[], decor:[{k:'tree',x:250},{k:'tree',x:980},{k:'tree',x:1800},{k:'rock',x:1350},{k:'tree',x:2450}],
     portals:[{ x:60, to:0, appear:'right' },{ x:2540, to:2, appear:'left' }] },
-  { name:'버섯의 숲', w:2800, floor:FLOOR_Y, bgm:'forest',
+  { name:'버섯의 숲', w:2800, floor:FLOOR_Y, respawn:4, bgm:'forest',
     theme:{ sky1:'#5a9e8a', sky2:'#d8eec4', hill:'#3f7a52', hill1:'#94c78a', hill2:'#5c9e4e', hill3:'#377538', ground:'#6b4a2c', grass:'#3d8a44' },
     plats:[[300,470,170],[560,390,160],[830,310,150],[1150,440,200],[1500,360,170],[1850,460,190],[2150,380,170],[2450,470,160]],
     ladders:[[1230,440,FLOOR_Y],[905,310,FLOOR_Y]],
@@ -460,7 +508,7 @@ const MAPS = [
     ladders:[[830,370,FLOOR_Y],[1880,455,FLOOR_Y]],
     spawns:[{t:'stump',x:500},{t:'stump',x:1200},{t:'stump',x:1750},{t:'stump',x:2300},
             {t:'zshroom',x:650},{t:'zshroom',x:950},{t:'zshroom',x:1350},{t:'zshroom',x:1600},{t:'zshroom',x:2050},{t:'zshroom',x:2450},
-            {t:'eye',x:850},{t:'eye',x:1500},{t:'eye',x:2200}],
+            {t:'eye',air:1,x:850},{t:'eye',air:1,x:1500},{t:'eye',air:1,x:2200}],
     npcs:[{ id:'merchant', x:200 }],
     decor:[{k:'deadtree',x:320},{k:'deadtree',x:1050},{k:'deadtree',x:1700},{k:'deadtree',x:2400},{k:'rock',x:1450}],
     portals:[{ x:70, to:3, appear:'right' },{ x:2540, to:5, appear:'left' }] },
@@ -475,7 +523,7 @@ const MAPS = [
     plats:[[250,460,180],[560,370,170],[870,280,160],[1180,440,200],[1490,350,180],[1800,260,160],[2100,440,200],[2400,340,170],[2620,460,160]],
     ladders:[[640,370,FLOOR_Y],[950,280,370],[1570,350,FLOOR_Y],[1880,260,350],[2480,340,FLOOR_Y]],
     spawns:[{t:'lupin',x:450},{t:'lupin',x:650},{t:'lupin',x:900},{t:'lupin',x:1250},{t:'lupin',x:1550},{t:'lupin',x:1750},{t:'lupin',x:1900},{t:'lupin',x:2200},{t:'lupin',x:2450},{t:'lupin',x:2550},
-            {t:'eye',x:700},{t:'eye',x:1400},{t:'eye',x:2350},{t:'zshroom',x:1100},{t:'zshroom',x:2050}],
+            {t:'eye',air:1,x:700},{t:'eye',air:1,x:1400},{t:'eye',air:1,x:2350},{t:'zshroom',x:1100},{t:'zshroom',x:2050}],
     npcs:[{ id:'sage2', x:1650 }],
     decor:[{k:'tree',x:180},{k:'tree',x:760},{k:'mushtree',x:1330},{k:'tree',x:1960},{k:'tree',x:2540},{k:'rock',x:1080}],
     portals:[{ x:60, to:0, appear:'left' },{ x:2740, to:7, appear:'left' },{ x:1350, to:19, appear:'left' }] },
@@ -504,7 +552,7 @@ const MAPS = [
     npcs:[],
     decor:[{k:'rock',x:300},{k:'deadtree',x:900},{k:'rock',x:1650},{k:'deadtree',x:2300},{k:'rock',x:2700}],
     portals:[{ x:60, to:7, appear:'right' },{ x:2740, to:10, appear:'left' }] },
-  { name:'얼음 동굴', w:2600, floor:FLOOR_Y, bgm:'swamp',
+  { name:'얼음 동굴', w:2600, floor:FLOOR_Y, respawn:9, bgm:'swamp',
     theme:{ sky1:'#16283e', sky2:'#2e4a6a', hill:'#24405e', hill1:'#2e4a6a', hill2:'#1f3853', hill3:'#12233a', ground:'#3a4a62', grass:'#7ea8c8', amb:'snow' },
     plats:[[200,470,150],[440,400,150],[680,470,150],[920,400,150],[1160,330,150],[1400,470,150],[1640,400,150],[1880,330,150],[2120,470,150],[2360,400,140]],
     ladders:[[280,470,FLOOR_Y],[1000,400,FLOOR_Y],[1240,330,400],[1720,400,FLOOR_Y],[1960,330,400],[2440,400,FLOOR_Y]],
@@ -521,7 +569,7 @@ const MAPS = [
     npcs:[], decor:[{k:'crystal',x:150},{k:'crystal',x:1380}],
     portals:[{ x:70, to:10, appear:'right' }] },
   // ===== 황금 해변 (Lv10~16 대체 사냥터) — 평지 러시 & 돛대 타워 =====
-  { name:'황금 백사장', w:3000, floor:FLOOR_Y, bgm:'coast',
+  { name:'황금 백사장', w:3000, floor:FLOOR_Y, respawn:4, bgm:'coast',
     theme:{ sky1:'#5ab8e8', sky2:'#eafaff', hill:'#d8bc7e', hill1:'#f0dca8', hill2:'#d8bc7e', hill3:'#b09258', ground:'#e8d4a0', grass:'#d0c078' },
     plats:[[700,440,200],[1500,440,200],[2300,440,200]],
     ladders:[],
@@ -588,8 +636,8 @@ const MAPS = [
     theme:{ sky1:'#7ab8ec', sky2:'#f2faff', hill:'#cfe4f5', hill1:'#e8f3fc', hill2:'#c4dcf0', hill3:'#9cc2e2', ground:'#d8e8f5', grass:'#f4faff', platStyle:'cloud' },
     plats:[[250,460,150],[520,390,130],[790,320,130],[1060,250,130],[1330,320,130],[1600,390,130],[1870,460,150],[2140,380,130],[2400,300,130]],
     ladders:[[1130,250,FLOOR_Y],[2470,300,FLOOR_Y]],
-    spawns:[{t:'wooly',x:350},{t:'wooly',x:750},{t:'wooly',x:1150},{t:'wooly',x:1550},{t:'wooly',x:1950},{t:'wooly',x:2350},
-            {t:'cpix',x:550},{t:'cpix',x:1000},{t:'cpix',x:1400},{t:'cpix',x:1800},{t:'cpix',x:2200}],
+    spawns:[{t:'wooly',air:1,x:350},{t:'wooly',air:1,x:750},{t:'wooly',air:1,x:1150},{t:'wooly',air:1,x:1550},{t:'wooly',air:1,x:1950},{t:'wooly',air:1,x:2350},
+            {t:'cpix',air:1,x:550},{t:'cpix',air:1,x:1000},{t:'cpix',air:1,x:1400},{t:'cpix',air:1,x:1800},{t:'cpix',air:1,x:2200}],
     npcs:[],
     decor:[{k:'cloudbush',x:200},{k:'cloudbush',x:1100},{k:'cloudbush',x:1750},{k:'cloudbush',x:2450}],
     portals:[{ x:60, to:6, appear:'right' },{ x:2540, to:20, appear:'left' }] },
@@ -597,8 +645,8 @@ const MAPS = [
     theme:{ sky1:'#2e3a6e', sky2:'#8a9ad0', hill:'#4a5a9e', hill1:'#5c6cb0', hill2:'#46548e', hill3:'#323e6e', ground:'#b8c4e8', grass:'#dce6fa', amb:'swamp', platStyle:'cloud' },
     plats:[[280,450,150],[560,370,130],[840,290,130],[1120,370,130],[1400,450,150],[1680,370,130],[1960,290,130],[2200,400,140]],
     ladders:[[910,290,FLOOR_Y],[2030,290,FLOOR_Y]],
-    spawns:[{t:'cpix',x:400},{t:'cpix',x:750},{t:'cpix',x:1100},{t:'cpix',x:1450},{t:'cpix',x:1800},{t:'cpix',x:2150},
-            {t:'wooly',x:600},{t:'wooly',x:1300},{t:'wooly',x:2000},{t:'eye',x:950},{t:'eye',x:1650}],
+    spawns:[{t:'cpix',air:1,x:400},{t:'cpix',air:1,x:750},{t:'cpix',air:1,x:1100},{t:'cpix',air:1,x:1450},{t:'cpix',air:1,x:1800},{t:'cpix',air:1,x:2150},
+            {t:'wooly',air:1,x:600},{t:'wooly',air:1,x:1300},{t:'wooly',air:1,x:2000},{t:'eye',air:1,x:950},{t:'eye',air:1,x:1650}],
     npcs:[],
     decor:[{k:'cloudbush',x:300},{k:'cloudbush',x:1200},{k:'cloudbush',x:2100}],
     portals:[{ x:60, to:19, appear:'right' }] },
@@ -612,7 +660,7 @@ const MAPS = [
     npcs:[],
     decor:[{k:'cactus',x:250},{k:'rock',x:1000},{k:'cactus',x:1700},{k:'rock',x:2250},{k:'cactus',x:2850}],
     portals:[{ x:60, to:15, appear:'right' },{ x:2940, to:22, appear:'left' }] },
-  { name:'미라의 회랑', w:2600, floor:FLOOR_Y, bgm:'desert',
+  { name:'미라의 회랑', w:2600, floor:FLOOR_Y, respawn:8, bgm:'desert',
     theme:{ sky1:'#6a4a2e', sky2:'#c09058', hill:'#8a6038', hill1:'#a87848', hill2:'#7e5a34', hill3:'#5a3e22', ground:'#b08c58', grass:'#c8a468', amb:'sand' },
     plats:[[300,450,160],[640,370,150],[980,450,170],[1320,370,150],[1660,450,170],[2000,370,150],[2320,460,150]],
     ladders:[[710,370,FLOOR_Y],[1390,370,FLOOR_Y],[2070,370,FLOOR_Y]],
@@ -660,7 +708,7 @@ const MAPS = [
     npcs:[{ id:'merchant', x:160 }],
     decor:[{k:'rock',x:350},{k:'crystal',x:1150},{k:'deadtree',x:1900},{k:'crystal',x:2450}],
     portals:[{ x:60, to:25, appear:'right' },{ x:2540, to:27, appear:'left' }] },
-  { name:'공허의 심연', w:2800, floor:FLOOR_Y, bgm:'void',
+  { name:'공허의 심연', w:2800, floor:FLOOR_Y, respawn:10, bgm:'void',
     theme:{ sky1:'#0e0a20', sky2:'#2e2252', hill:'#20183e', hill1:'#2c2250', hill2:'#1d1638', hill3:'#120c28', ground:'#322848', grass:'#5c3e8e', amb:'void' },
     plats:[[250,460,150],[520,380,140],[790,300,140],[1060,440,170],[1330,360,150],[1600,280,140],[1870,440,170],[2140,360,150],[2410,450,160]],
     ladders:[[860,300,FLOOR_Y],[1670,280,FLOOR_Y],[2480,450,FLOOR_Y]],
@@ -1080,7 +1128,7 @@ const player = {
   job:'beginner', job2:null, job3:null, job4:null, awaken:false, level:1, exp:0, sp:0, skills:{},
   hp:100, mp:60, meso:0, channel:null,
   potions:{ hp:3, mp:3, hp2:0, mp2:0, hp3:0, mp3:0 }, potionCd:{ hp:0, mp:0 },
-  binds:{}, seqs:{ hunt:['X','C','A','D'], buff:['V','F','R','G'], boss:['V','F','T','Q','A'] }, book:{}, stats:{ kills:0, boss:0, maxDmg:0, deaths:0, time:0 }, visited:{ 0:true }, achv:{}, jqClears:0, pet:null, petsOwned:{}, rebirth:0, ap:{ str:0, vit:0, int:0, luk:0, free:0 },
+  binds:{}, seqs:{ hunt:['X','C','A','D'], buff:['V','F','R','G'], boss:['V','F','T','Q','A'] }, book:{}, stats:{ kills:0, boss:0, maxDmg:0, deaths:0, time:0 }, visited:{ 0:true }, achv:{}, jqClears:0, pet:null, petsOwned:{}, rebirth:0, ap:{ str:0, dex:0, vit:0, int:0, luk:0, free:0 },
   inv:[], equip:{ weapon:null, hat:null, top:null, glove:null, shoe:null },
   buffs:{},
   combo:{ n:0, t:0 },
@@ -1221,7 +1269,7 @@ function doRebirth(){
   // 회귀: 레벨·경험치·SP·스킬·AP 초기화 (장비/메소/도감/업적/펫/퀘스트/SP환류는 보존)
   player.level = 1; player.exp = 0;
   player.sp = 0; player.skills = {};
-  player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+  player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
   player.buffs = {}; player.cds = {}; player.combo = { n:0, t:0 };
   player.hp = maxHp(); player.mp = maxMp();
   game.uiWindow = null;
@@ -1265,7 +1313,7 @@ function buffLevel(id){ return player.buffs[id] ? player.buffs[id].lvl : -1; }
 const maxHp = () => Math.round((100 + (player.level - 1) * 20) * (player.job === 'warrior' ? 1.3 : 1) * (player.awaken ? AWAKEN.hpMul : 1) * (1 + setBonus().hp + rebirthHpPct())) + apOf('vit') * 5 + slayerHpFlat();
 const maxMp = () => Math.round((60 + (player.level - 1) * 12) * (player.job === 'mage' ? 1.6 : 1)) + apOf('int') * 4;
 function totalAtk(){
-  let a = 8 + player.level * 3 + itemStat(player.equip.weapon, 'atk') + itemStat(player.equip.glove, 'atk') + Math.floor(apOf('str') * 0.6) + (player.spAtk || 0);
+  let a = 8 + player.level * 3 + itemStat(player.equip.weapon, 'atk') + itemStat(player.equip.glove, 'atk') + apAtkBonus() + (player.spAtk || 0);
   const rl = buffLevel('rage');
   if (rl >= 0) a *= 1 + 0.10 + 0.01 * rl;
   const bll = buffLevel('bless');
@@ -1300,7 +1348,7 @@ function critChance(){
   return c;
 }
 function moveSpd(){
-  let s = 285 * (player.job === 'archer' ? 1.08 : (player.job === 'thief' ? 1.05 : 1)) + itemStat(player.equip.shoe, 'spd');
+  let s = 285 * (player.job === 'archer' ? 1.08 : (player.job === 'thief' ? 1.05 : 1)) + itemStat(player.equip.shoe, 'spd') + apOf('dex') * 0.2;
   const hl = buffLevel('haste');
   if (hl >= 0) s *= 1.12 + 0.012 * hl;
   const ssl = buffLevel('sstep');
@@ -1311,6 +1359,15 @@ function moveSpd(){
 }
 const expNeed = () => Math.floor(20 * Math.pow(player.level, 1.7));
 function skillLevel(id){ return player.skills[id] || 0; }
+// 분기 특화 패시브: 2차 전직(job2) 순간부터 자동 적용 — 자기 계열 +25% / 비계열 공격 -15%.
+// 버프·회복·유틸(무태그)은 1.0. 저장 필드 없이 player.job2 로만 파생 계산 (세이브 호환).
+function branchDmgMult(def){
+  if (!def || !player.job2) return 1;
+  if (def.dur != null) return 1;
+  const tag = SKILL_TAGS[def.id];
+  if (!tag) return 1;
+  return BRANCH_AFFINITY[player.job2] === tag ? SPEC_BONUS : SPEC_PENALTY;
+}
 function mySkills(){ return SKILL_DEFS[player.job] || null; }
 function mySkills2(){ return player.job2 ? SKILL2_DEFS[player.job2] : null; }
 function job2Info(){ return player.job2 && JOB2[player.job] ? JOB2[player.job].find(o => o.key === player.job2) || null : null; }
@@ -1478,10 +1535,19 @@ function loadAchvFromSave(d2){
 const AP_PER_LEVEL = 3;
 const AP_RESET_COST = 10000;
 function apOf(k){ return (player.ap && player.ap[k]) | 0; }
+// 직업별 주스탯: 주스탯만 공격력을 크게 올린다 (0.7/pt, 비주 공격스탯은 0.15/pt)
+const AP_MAIN = { warrior:'str', archer:'dex', mage:'int', thief:'luk' };
+function apMainStat(){ return AP_MAIN[player.job] || 'str'; }
+function apAtkBonus(){
+  const main = apMainStat();
+  let v = apOf(main) * 0.7;
+  for (const k of ['str', 'dex', 'int', 'luk']) if (k !== main) v += apOf(k) * 0.15;
+  return Math.floor(v);
+}
 function investAp(k, n){
-  if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+  if (!player.ap) player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
   if (player.ap.free <= 0) return;
-  if (!['str', 'vit', 'int', 'luk'].includes(k)) return;
+  if (!['str', 'dex', 'vit', 'int', 'luk'].includes(k)) return;
   const amt = Math.min(player.ap.free, Math.max(1, n | 0 || 1)); // n 생략 = 1, 'all' 일괄은 free 전량
   player.ap[k] += amt;
   player.ap.free -= amt;
@@ -1500,19 +1566,19 @@ function convertSp(){
 }
 function resetAp(){
   if (!player.ap) return;
-  const spent = apOf('str') + apOf('vit') + apOf('int') + apOf('luk');
+  const spent = apOf('str') + apOf('dex') + apOf('vit') + apOf('int') + apOf('luk');
   if (spent <= 0){ notify('분배된 AP가 없습니다'); return; }
   if (player.meso < AP_RESET_COST){ notify('초기화 비용이 부족합니다 (' + AP_RESET_COST.toLocaleString() + '메소)'); return; }
   player.meso -= AP_RESET_COST;
-  player.ap = { str:0, vit:0, int:0, luk:0, free: apOf('free') + spent };
+  player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free: apOf('free') + spent };
   notify('AP를 초기화했습니다 (' + AP_RESET_COST.toLocaleString() + '메소 소모)');
   saveGame();
 }
 // 소급 지급: 저장 시점보다 레벨이 앞서 있으면 부족분 보정
 function reconcileAp(){
-  if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+  if (!player.ap) player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
   const earned = Math.max(0, (player.level - 1)) * AP_PER_LEVEL;
-  const have = apOf('str') + apOf('vit') + apOf('int') + apOf('luk') + apOf('free');
+  const have = apOf('str') + apOf('dex') + apOf('vit') + apOf('int') + apOf('luk') + apOf('free');
   if (have < earned){
     player.ap.free += earned - have;
     notify('AP ' + (earned - have) + ' 지급! 스탯창(S)에서 분배하세요');
@@ -1571,7 +1637,7 @@ function loadSaveData(){
     player.achv = {};
     player.jqClears = 0;
     player.pet = null; player.petsOwned = {};
-    player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
     player.spAtk = 0;
     player.rebirth = 0;
       if (d2.binds && typeof d2.binds === 'object'){
@@ -1601,9 +1667,9 @@ function loadSaveData(){
       player.jqClears = d2.jqClears | 0;
       player.pet = d2.pet && PETS[d2.pet] ? d2.pet : null;
       player.petsOwned = d2.petsOwned && typeof d2.petsOwned === 'object' ? d2.petsOwned : {};
-      player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+      player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
       if (d2.ap && typeof d2.ap === 'object'){
-        for (const k of ['str', 'vit', 'int', 'luk', 'free']) player.ap[k] = clamp(d2.ap[k] | 0, 0, 5000);
+        for (const k of ['str', 'dex', 'vit', 'int', 'luk', 'free']) player.ap[k] = clamp(d2.ap[k] | 0, 0, 5000);
       }
       reconcileAp();
       player.spAtk = clamp(d2.spAtk | 0, 0, 100);
@@ -1677,7 +1743,7 @@ function startGame(useSave){
     player.achv = {};
     player.jqClears = 0;
     player.pet = null; player.petsOwned = {};
-    player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
     player.spAtk = 0;
     player.rebirth = 0;
     player.inv = []; player.equip = { weapon:null, hat:null, top:null, glove:null, shoe:null };
@@ -1706,8 +1772,13 @@ function spawnMonster(t, x, fromSpawner){
     jumpTimer:5, sporeTimer:3, landed:true, summoned1:false, summoned2:false,
   };
   v21_applySurge(m, T); // v21: 심연 격류 (맵25~28, 전승 회차 비례)
+  // 공중 낙하 등장 (스포너 air 플래그 — 하늘에서 떨어지며 출현)
+  if (fromSpawner && fromSpawner.air){
+    m.y = curMap().floor - 300 - rand(0, 80);
+    m.spawnT = 0.6;
+  }
   monsters.push(m);
-  addEffect('spawnpoof', x, curMap().floor - T.h / 2, 1);
+  addEffect('spawnpoof', x, m.y - T.h / 2, 1);
   return m;
 }
 function loadMap(idx, appear){
@@ -1721,7 +1792,7 @@ function loadMap(idx, appear){
   player.returning = null;
   const M = MAPS[idx];
   for (const s of M.spawns){
-    const sp = { t:s.t, x:s.x, respawnT:0 };
+    const sp = { t:s.t, x:s.x, air:s.air || 0, respawnT:0 };
     spawners.push(sp);
     spawnMonster(s.t, s.x, sp);
   }
@@ -1986,7 +2057,7 @@ function doJobAdvance(jobKey){
   saveGame();
 }
 function doJob2Advance(choiceKey){
-  if (player.job === 'beginner' || player.job2 || player.level < 15) return;
+  if (player.job === 'beginner' || player.job2 || player.level < 18) return;
   const opts = JOB2[player.job];
   const pick = opts.find(o => o.key === choiceKey) || opts[0];
   player.job2 = pick.key;
@@ -1999,7 +2070,7 @@ function doJob2Advance(choiceKey){
   saveGame();
 }
 function doJob3Advance(){
-  if (!player.job2 || player.job3 || player.level < 20) return;
+  if (!player.job2 || player.job3 || player.level < 30) return;
   player.job3 = JOB3[player.job].key;
   player.sp += 3;
   player.hp = maxHp(); player.mp = maxMp();
@@ -2010,7 +2081,7 @@ function doJob3Advance(){
   saveGame();
 }
 function doJob4Advance(){
-  if (!player.job3 || player.job4 || player.level < 28) return;
+  if (!player.job3 || player.job4 || player.level < 45) return;
   player.job4 = JOB4[player.job].key;
   player.sp += 3;
   player.hp = maxHp(); player.mp = maxMp();
@@ -2050,7 +2121,7 @@ function useSkillSlot(i){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'ps': {
@@ -2173,7 +2244,7 @@ function useSkillSlot2(i){
   if (player.climbing || player.prone || player.channel) return;
   const defs = mySkills2();
   if (!defs){
-    notify(player.job === 'beginner' ? 'Lv8에 전직하면 스킬을 배웁니다' : 'Lv15에 수목원의 숲의 현자에게서 2차 전직할 수 있습니다');
+    notify(player.job === 'beginner' ? 'Lv8에 전직하면 스킬을 배웁니다' : 'Lv18에 수목원의 숲의 현자에게서 2차 전직할 수 있습니다');
     return;
   }
   const def = defs[i];
@@ -2183,7 +2254,7 @@ function useSkillSlot2(i){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'bd': {
@@ -2407,7 +2478,7 @@ function useSkillSlot3(i){
   const defs = mySkills3();
   if (!defs){
     if (player.job2) notify('Lv20에 채석장의 거인의 현자에게서 3차 전직할 수 있습니다');
-    else notify('먼저 2차 전직(Lv15)이 필요합니다');
+    else notify('먼저 2차 전직(Lv18)이 필요합니다');
     return;
   }
   const def = defs[i];
@@ -2417,7 +2488,7 @@ function useSkillSlot3(i){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'bs': {
@@ -2542,7 +2613,7 @@ function useSkillSlot4X(){
   if (player.climbing || player.prone || player.channel) return;
   const def = mySkills4X();
   if (!def){
-    if (player.job3) notify('분기 전용기는 4차 전직(Lv28) 후 열립니다');
+    if (player.job3) notify('분기 전용기는 4차 전직(Lv45) 후 열립니다');
     else notify('먼저 3차 전직(Lv20)이 필요합니다');
     return;
   }
@@ -2552,7 +2623,7 @@ function useSkillSlot4X(){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'sbl': {
@@ -2746,7 +2817,7 @@ function useSkillSlotX(){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = (def.base + def.per * lvl) * (player.awaken ? AWAKEN.ultMul : 1);
+  const mult = (def.base + def.per * lvl) * (player.awaken ? AWAKEN.ultMul : 1) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'hcx': {
@@ -2858,7 +2929,7 @@ function useSkillSlot4(i){
   if (player.climbing || player.prone || player.channel) return;
   const defs = mySkills4();
   if (!defs){
-    if (player.job3) notify('Lv28에 얼음 동굴의 설산의 은자에게서 4차 전직할 수 있습니다');
+    if (player.job3) notify('Lv45에 얼음 동굴의 설산의 은자에게서 4차 전직할 수 있습니다');
     else notify('먼저 3차 전직(Lv20)이 필요합니다');
     return;
   }
@@ -2869,7 +2940,7 @@ function useSkillSlot4(i){
   if (player.mp < def.mp){ notify('MP가 부족합니다'); return; }
   player.mp -= def.mp;
   player.cds[def.id] = def.cd;
-  const mult = def.base + def.per * lvl;
+  const mult = (def.base + def.per * lvl) * branchDmgMult(def);
   player.castAnim = 0.25;
   switch (def.id){
     case 'rb': {
@@ -3114,7 +3185,7 @@ function killMonster(m){
   feelHit(m.type === 'boss' ? 0.22 : 0.11, player.facing);
   gainExp(m.surge ? Math.round(m.T.exp * m.surge.exp) : m.T.exp);
   questOnKill(m.type);
-  if (m.spawner) m.spawner.respawnT = 6;
+  if (m.spawner) m.spawner.respawnT = curMap().respawn || 6; // 맵별 리젠 속도 개성
   fieldBossOnKill(m);
   // 드랍
   drops.push({ kind:'meso', x:m.x + rand(-10, 10), y:m.y - 20, vy:-260, value:(m.surge ? Math.round(irand(m.T.meso[0], m.T.meso[1]) * m.surge.meso) : irand(m.T.meso[0], m.T.meso[1])), t:0 });
@@ -3188,20 +3259,20 @@ function gainExp(e){
     leveled = true;
   }
   if (leveled){
-    if (!player.ap) player.ap = { str:0, vit:0, int:0, luk:0, free:0 };
+    if (!player.ap) player.ap = { str:0, dex:0, vit:0, int:0, luk:0, free:0 };
     player.ap.free += AP_PER_LEVEL;
     player.hp = maxHp(); player.mp = maxMp();
     addEffect('levelup', player.x, player.y, 1);
     SFX.levelup();
     if (player.job === 'beginner' && player.level >= 8) game.jobPromptPending = true;
-    if (player.job !== 'beginner' && !player.job2 && player.level >= 15) notify('Lv15 달성! 천공의 수목원 「숲의 현자」를 찾아가세요');
-    if (player.job2 && !player.job3 && player.level >= 20) notify('Lv20 달성! 거인의 채석장 「거인의 현자」를 찾아가세요');
-    if (player.job3 && !player.job4 && player.level >= 28) notify('Lv28 달성! 얼음 동굴 「설산의 은자」를 찾아가세요');
+    if (player.job !== 'beginner' && !player.job2 && player.level >= 18) notify('Lv18 달성! 천공의 수목원 「숲의 현자」를 찾아가세요');
+    if (player.job2 && !player.job3 && player.level >= 30) notify('Lv30 달성! 거인의 채석장 「거인의 현자」를 찾아가세요');
+    if (player.job3 && !player.job4 && player.level >= 45) notify('Lv45 달성! 얼음 동굴 「설산의 은자」를 찾아가세요');
     if (player.level === 10) notify('기능 해금: 마을 귀환(O) · 장비 강화(상인)');
     if (player.level === 12) notify('기능 해금: 사냥 시퀀스(B) — 스킬창에서 편집');
     if (player.level === 16) notify('기능 해금: 버프 시퀀스(H)');
     if (player.level === 24) notify('기능 해금: 보스 시퀀스(J)');
-    if (player.job4 && !player.awaken && player.level >= AWAKEN.lv) notify('Lv40 달성! 미라의 회랑 「시원의 현자」를 찾아가세요');
+    if (player.job4 && !player.awaken && player.level >= AWAKEN.lv) notify('Lv60 달성! 미라의 회랑 「시원의 현자」를 찾아가세요');
     if (player.level === 45) notify('Lv45 — 파라오의 피라미드 안쪽에 공허의 균열이 열렸다…');
     if (player.level === REBIRTH_LV) notify('Lv100 — 공허 군주를 넘어서면 「전승」(스탯창 S)이 열립니다');
     saveGame();
@@ -3694,6 +3765,12 @@ function updateBoss(b, dt){
 }
 
 // ---------- 월드 업데이트 ----------
+// ---------- 길라잡이 ----------
+function guideSpot(){
+  let best = GUIDE_SPOTS[0];
+  for (const g of GUIDE_SPOTS){ if (player.level >= g[1]) best = g; }
+  return best;
+}
 // ---------- 펫 ----------
 function buyPet(k){
   const P = PETS[k];
@@ -3955,6 +4032,12 @@ function updateWorld(dt){
       }
     }
   }
+  // 길라잡이: 레벨업으로 추천 사냥터가 바뀌면 안내
+  const gsp = guideSpot();
+  if (game.lastGuideMap !== gsp[0]){
+    if (game.lastGuideMap != null && game.state === 'play') notify('새 추천 사냥터: ' + MAPS[gsp[0]].name + ' — U(월드맵)에서 확인');
+    game.lastGuideMap = gsp[0];
+  }
   // 펫 따라오기 (렌더용 부드러운 추적 좌표)
   if (player.pet){
     const ptx = player.x - player.facing * 36, pty = player.y - 48;
@@ -4128,12 +4211,31 @@ function drawCloud(cx, cy, s, alpha){
   ctx.fill();
   ctx.globalAlpha = 1;
 }
+// 맵 → 배경 권역 (bg_far_*/bg_mid_* 에셋 자동 레이어링용, PROMPTS_MASTER G섹션과 파일명 일치)
+const BG_REGION = {
+  0:'meadow', 1:'meadow', 2:'mushforest', 3:'coast', 4:'mushforest', 5:'mushforest',
+  6:'quarry', 7:'quarry', 8:'quarry', 9:'snow', 10:'snow', 11:'snow',
+  12:'coast', 13:'coast', 14:'clocktower', 15:'clocktower', 16:'abyss', 17:'abyss', 18:'abyss',
+  19:'sky', 20:'sky', 21:'desert', 22:'desert', 23:'desert', 24:'sky',
+  25:'void', 26:'void', 27:'void', 28:'void',
+};
 function drawBG(){
   const M = curMap(), th = M.theme, style = M.bgm;
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, th.sky1); g.addColorStop(1, th.sky2);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+  // 컨셉 배경 에셋 훅: 권역별 원경(패럴랙스 0.1)·중경(0.28) — 에셋 도착 시 자동 적용
+  const bgReg = BG_REGION[game.mapIdx];
+  if (bgReg && typeof aiReady === 'function'){
+    for (const [pre, par, lift] of [['bg_far_', 0.1, 36], ['bg_mid_', 0.28, 14]]){
+      const bim = aiReady(pre + bgReg);
+      if (!bim) continue;
+      const bw = bim.naturalWidth / 2, bh = bim.naturalHeight / 2;
+      const by = FLOOR_Y - bh + lift;
+      for (let bx = -((camX * par) % bw) - bw; bx < W + bw; bx += bw) ctx.drawImage(bim, bx, by, bw, bh);
+    }
+  }
   // 해/달
   if (style === 'swamp' || style === 'boss'){
     ctx.fillStyle = 'rgba(240,240,215,0.85)';
@@ -5035,16 +5137,26 @@ function drawTerrain(){
     const sx = p.x - camX;
     if (sx < -60 || sx > W + 60) continue;
     const pulse = Math.sin(game.time * 4) * 4;
-    // AI 에셋 포탈 게이트 (호흡 스케일 + 궤도 입자, 폴백: 벡터 소용돌이)
-    if (drawAiSprite('ui_portal', sx, M.floor + 2, { anchor:'bottom', scale: 1 + pulse * 0.006 })){
+    // AI 에셋 포탈 게이트 (차분한 호흡, 보스행은 붉은 기운으로 구분)
+    const bossDest = !!BOSS_OF_MAP[p.to];
+    if ((bossDest && drawAiSprite('ui_portal_boss', sx, M.floor + 2, { anchor:'bottom', scale: 0.85 + pulse * 0.003 })) ||
+        drawAiSprite('ui_portal', sx, M.floor + 2, { anchor:'bottom', scale: 0.85 + pulse * 0.003, alpha: 0.92 })){
       ctx.save();
-      ctx.translate(sx, M.floor - 52);
+      ctx.translate(sx, M.floor - 46);
       ctx.globalCompositeOperation = 'lighter';
-      for (let oi = 0; oi < 5; oi++){
-        const oa = game.time * 2.2 + oi * 1.257;
-        const tw3 = 0.4 + Math.max(0, Math.sin(game.time * 5 + oi * 2)) * 0.6;
-        ctx.fillStyle = 'rgba(210,190,255,' + tw3 + ')';
-        ctx.beginPath(); ctx.arc(Math.cos(oa) * 34, Math.sin(oa) * 46, 2.2, 0, 7); ctx.fill();
+      if (bossDest){
+        // 보스행: 낮게 맥동하는 붉은 기운 + 경고 문양
+        const ba = 0.18 + Math.abs(Math.sin(game.time * 2.4)) * 0.2;
+        ctx.fillStyle = 'rgba(255,70,50,' + ba + ')';
+        ctx.beginPath(); ctx.ellipse(0, 0, 40, 58, 0, 0, 7); ctx.fill();
+      } else {
+        // 일반: 은은한 입자 2개만
+        for (let oi = 0; oi < 2; oi++){
+          const oa = game.time * 1.6 + oi * Math.PI;
+          const tw3 = 0.25 + Math.max(0, Math.sin(game.time * 3.5 + oi * 2)) * 0.35;
+          ctx.fillStyle = 'rgba(210,190,255,' + tw3 + ')';
+          ctx.beginPath(); ctx.arc(Math.cos(oa) * 30, Math.sin(oa) * 40, 1.8, 0, 7); ctx.fill();
+        }
       }
       ctx.restore();
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -5255,9 +5367,9 @@ function drawNpc(n, floor){
         }
       }
     } else {
-    const can = tier === 2 ? (player.job !== 'beginner' && !player.job2 && player.level >= 15)
-      : tier === 3 ? (player.job2 && !player.job3 && player.level >= 20)
-      : (player.job3 && !player.job4 && player.level >= 28);
+    const can = tier === 2 ? (player.job !== 'beginner' && !player.job2 && player.level >= 18)
+      : tier === 3 ? (player.job2 && !player.job3 && player.level >= 30)
+      : (player.job3 && !player.job4 && player.level >= 45);
     if (can){
       const my = floor - 120 + Math.sin(game.time * 3) * 3;
       if (!drawAiSprite('ui_quest_mark', sx, my - 9, {})){
@@ -9502,6 +9614,11 @@ function drawEffects(){
       ctx.lineWidth = 4.5;
       ctx.beginPath(); ctx.arc(sx, e.y - 30, 32 + pr * 95, 0, 7); ctx.stroke();
     } else if (e.kind === 'buff'){
+      // 공용 버프 오라 에셋 훅 (fx_buff_aura 도착 시 가산 합성)
+      if (typeof aiReady === 'function' && aiReady('fx_buff_aura')){
+        const bpr = Math.min(1, e.t / 0.5);
+        drawAiSprite('fx_buff_aura', e.x - camX, e.y, { add:true, alpha: (1 - bpr) * 0.9, scale: 0.6 + bpr * 0.4 });
+      }
       const pr = e.t / 0.5;
       if (pr > 1) continue;
       const a = 1 - pr;
@@ -10023,6 +10140,21 @@ function drawHUD(){
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
   ctx.font = '12px sans-serif';
   ctx.fillText(goal, 24, 58);
+  // 길라잡이: 추천 사냥터 안내
+  if (typeof guideSpot === 'function' && game.state === 'play'){
+    const gsp2 = guideSpot();
+    ctx.font = 'bold 12px sans-serif';
+    if (gsp2[0] === game.mapIdx){
+      ctx.fillStyle = '#8de88a';
+      ctx.fillText('레벨에 딱 맞는 사냥터입니다', 24, 76);
+    } else if (!curMap().safe){
+      ctx.fillStyle = '#ffd94a';
+      ctx.fillText('추천 사냥터: ' + MAPS[gsp2[0]].name + ' (U 월드맵)', 24, 76);
+    } else {
+      ctx.fillStyle = '#ffd94a';
+      ctx.fillText('추천 사냥터: ' + MAPS[gsp2[0]].name, 24, 76);
+    }
+  }
   // 미니맵 (지형 실루엣 + 마커 체계)
   const mmW = 190, mmH = 48, mmX = W - mmW - 14, mmY = 12;
   ctx.fillStyle = 'rgba(10,12,24,0.72)';
@@ -10688,7 +10820,7 @@ function drawTitleFore(){
   ctx.fillText('공격 Z (꾹)  |  스킬 X~V·A~F·Q~R·T·G  |  물약 1~4  |  포탈·NPC 대화 ↑', W / 2, 468);
   ctx.fillText('인벤 E | 스킬 K(드래그 배치·시퀀스 설정) | 시퀀스 B | 도감 N | 스탯 S | 퀘스트 L | 소리 M', W / 2, 490);
   ctx.fillStyle = '#ffe9a8';
-  ctx.fillText('Lv8 전직(전사/궁수/마법사/도적) → Lv15 2차 → Lv20 3차 → Lv28 4차!  머쉬맘을 무찌르세요', W / 2, 518);
+  ctx.fillText('Lv8 전직(전사/궁수/마법사/도적) → Lv18 2차 → Lv30 3차 → Lv45 4차 → Lv60 각성!', W / 2, 518);
   ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '12px sans-serif';
   ctx.fillText('진행상황은 자동 저장됩니다. 창 UI는 마우스로 클릭할 수 있습니다.', W / 2, 544);
 }
@@ -11026,9 +11158,9 @@ function drawSkillWindow(){
   }
   const tiers = [
     { name:'1차', sub:JOBS[player.job].name, defs:defs1, lockMsg:null },
-    { name:'2차', sub:(job2Info() ? job2Info().name : JOB2[player.job].map(o => o.name).join('/')), defs:mySkills2(), lockMsg:'Lv15에 촌장에게서 2차 전직 (현재 Lv' + player.level + ')' },
-    { name:'3차', sub:JOB3[player.job].name, defs:(mySkills3() ? [...mySkills3(), ...(mySkillsX() ? [mySkillsX()] : [])] : null), lockMsg:'Lv20에 3차 전직 시 해금 (현재 Lv' + player.level + ')' },
-    { name:'4차', sub:JOB4[player.job].name, defs:(mySkills4() ? [...mySkills4(), ...(mySkills4X() ? [mySkills4X()] : [])] : null), lockMsg:'Lv28에 4차 전직 시 해금 (현재 Lv' + player.level + ')' },
+    { name:'2차', sub:(job2Info() ? job2Info().name : JOB2[player.job].map(o => o.name).join('/')), defs:mySkills2(), lockMsg:'Lv18에 숲의 현자에게서 2차 전직 (현재 Lv' + player.level + ')' },
+    { name:'3차', sub:JOB3[player.job].name, defs:(mySkills3() ? [...mySkills3(), ...(mySkillsX() ? [mySkillsX()] : [])] : null), lockMsg:'Lv30에 3차 전직 시 해금 (현재 Lv' + player.level + ')' },
+    { name:'4차', sub:JOB4[player.job].name, defs:(mySkills4() ? [...mySkills4(), ...(mySkills4X() ? [mySkills4X()] : [])] : null), lockMsg:'Lv45에 4차 전직 시 해금 (현재 Lv' + player.level + ')' },
   ];
   if (game.skillTab == null){
     game.skillTab = player.job4 ? 3 : (player.job3 ? 2 : (player.job2 ? 1 : 0));
@@ -11077,7 +11209,22 @@ function drawSkillWindow(){
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 14px sans-serif';
     ctx.fillText(d.name + '  Lv.' + lvl + '/10', wx + 84, sy + 26);
-    const now = Math.round((d.base + d.per * Math.max(1, lvl)) * 100);
+    const tg9 = SKILL_TAGS[d.id];
+    if (tg9 && d.dur == null){
+      const own9 = !!player.job2 && BRANCH_AFFINITY[player.job2] === tg9;
+      const lbl9 = TAG_INFO[tg9].label + (player.job2 ? (own9 ? ' +25%' : ' -15%') : '');
+      ctx.font = 'bold 10px sans-serif';
+      const tw9 = ctx.measureText(lbl9).width + 14;
+      const tx9 = wx + ww - 96 - tw9;
+      ctx.fillStyle = own9 ? 'rgba(245,197,66,0.20)' : 'rgba(255,255,255,0.07)';
+      rr(tx9, sy + 12, tw9, 17, 8); ctx.fill();
+      ctx.fillStyle = own9 ? '#f5c542' : '#8a8f9e';
+      ctx.textAlign = 'center';
+      ctx.fillText(lbl9, tx9 + tw9 / 2, sy + 24);
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 14px sans-serif';
+    }
+    const now = Math.round((d.base + d.per * Math.max(1, lvl)) * 100 * branchDmgMult(d));
     const numText = d.id === 'inf'
       ? '초당 MP +' + Math.round(d.base + d.per * Math.max(1, lvl)) + ' · ' + d.dur + '초 · MP' + d.mp
       : (d.dur
@@ -11183,16 +11330,21 @@ function drawStatWindow(){
   ctx.beginPath(); ctx.moveTo(wx + 24, ry - 14); ctx.lineTo(wx + ww - 24, ry - 14); ctx.stroke();
   ctx.fillStyle = '#ffd94a'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('AP 분배 (남은 AP: ' + apOf('free') + ')', wx + 40, ry + 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px sans-serif';
+  ctx.fillText('직업 주스탯(★)이 공격력 +0.7/pt — 다른 공격 스탯은 +0.15/pt', wx + 210, ry + 4);
   ry += 16;
+  const mainK = typeof apMainStat === 'function' ? apMainStat() : 'str';
   const AP_ROWS = [
-    ['str', '힘', '공격력 +0.6/pt', apOf('str')],
+    ['str', '힘', '전사 주스탯', apOf('str')],
+    ['dex', '민첩', '궁수 주스탯 · 이속 +0.2/pt', apOf('dex')],
+    ['int', '지력', '마법사 주스탯 · MP +4/pt', apOf('int')],
+    ['luk', '운', '도적 주스탯 · 치명타 +0.1%/pt', apOf('luk')],
     ['vit', '체력', '최대 HP +5/pt', apOf('vit')],
-    ['int', '지력', '최대 MP +4/pt', apOf('int')],
-    ['luk', '운', '치명타 +0.1%/pt', apOf('luk')],
   ];
   for (const [key2, lbl2, desc2, val2] of AP_ROWS){
-    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText(lbl2 + '  ' + val2, wx + 40, ry + 6);
+    const isMain = key2 === mainK;
+    ctx.fillStyle = isMain ? '#ffd94a' : 'rgba(255,255,255,0.75)'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText((isMain ? '★' : '') + lbl2 + '  ' + val2, wx + 40, ry + 6);
     ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '10px sans-serif';
     ctx.fillText(desc2, wx + 118, ry + 6);
     if (btn(wx + ww - 78, ry - 10, 38, 22, '+', { enabled: apOf('free') > 0, color:'#3a7a4a', hoverColor:'#4a9e5a', font:14 })){
@@ -11380,7 +11532,7 @@ function drawAwakenDialog(npc){
     sub = '칭호 「' + AWAKEN.title + '」 — 그 힘을 마음껏 떨치게.';
   } else if (!player.job4){
     text = '아직 그대의 길은 끝나지 않았네.';
-    sub = '먼저 4차 전직(Lv28)을 마치고 오게.';
+    sub = '먼저 4차 전직(Lv45)을 마치고 오게.';
   } else if (player.level < AWAKEN.lv){
     text = '그릇은 완성되었으나, 시간이 더 필요하네.';
     sub = 'Lv' + AWAKEN.lv + '에 다시 찾아오게. (현재 Lv' + player.level + ')';
@@ -11481,9 +11633,9 @@ function drawDialogWindow(){
   // 상위 전직은 각 대륙의 전직관에게 (안내만)
   if (player.job !== 'beginner'){
     let hint = null;
-    if (!player.job2 && player.level >= 15) hint = '2차 전직 → 천공의 수목원 「숲의 현자」';
-    else if (player.job2 && !player.job3 && player.level >= 20) hint = '3차 전직 → 거인의 채석장 「거인의 현자」';
-    else if (player.job3 && !player.job4 && player.level >= 28) hint = '4차 전직 → 얼음 동굴 「설산의 은자」';
+    if (!player.job2 && player.level >= 18) hint = '2차 전직 → 천공의 수목원 「숲의 현자」';
+    else if (player.job2 && !player.job3 && player.level >= 30) hint = '3차 전직 → 거인의 채석장 「거인의 현자」';
+    else if (player.job3 && !player.job4 && player.level >= 45) hint = '4차 전직 → 얼음 동굴 「설산의 은자」';
     if (hint){
       ctx.fillStyle = '#8ad8ff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
       ctx.fillText(hint, wx + 36, wy + 152);
@@ -11826,6 +11978,14 @@ function drawWorldMapWindow(){
       ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(nx, ny, 18, 0, 7); ctx.stroke();
     }
+    if (typeof guideSpot === 'function' && i === guideSpot()[0] && i !== game.mapIdx){
+      // 길라잡이: 추천 사냥터 초록 맥동 링 + 라벨
+      ctx.strokeStyle = 'rgba(120,230,120,' + (0.5 + Math.sin(game.time * 4) * 0.3) + ')';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(nx, ny, 16, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#8de88a'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('추천', nx, ny - 18);
+    }
     if (i === questMap && i !== game.mapIdx){
       const qb = ny - 26 + Math.sin(game.time * 3) * 3;
       ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
@@ -12018,9 +12178,9 @@ try {
       doJobAdvance(job);
       game.uiWindow = null;
       const wantTier = sp.has('job4') ? 4 : (sp.has('job3') ? 3 : (sp.has('job2') ? 2 : 1));
-      if (wantTier >= 2){ player.level = Math.max(player.level, 16); doJob2Advance(); }
-      if (wantTier >= 3){ player.level = Math.max(player.level, 21); doJob3Advance(); }
-      if (wantTier >= 4){ player.level = Math.max(player.level, 29); doJob4Advance(); }
+      if (wantTier >= 2){ player.level = Math.max(player.level, 19); doJob2Advance(); }
+      if (wantTier >= 3){ player.level = Math.max(player.level, 31); doJob3Advance(); }
+      if (wantTier >= 4){ player.level = Math.max(player.level, 46); doJob4Advance(); }
       if (wantTier >= 2){
         player.sp = 99;
         for (const defs of [SKILL2_DEFS[player.job2], wantTier >= 3 ? SKILL3_DEFS[player.job] : null, wantTier >= 4 ? SKILL4_DEFS[player.job] : null]){
